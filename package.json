@@ -1,0 +1,21 @@
+{
+  "name": "scheduling-app",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev:web": "pnpm -F web dev",
+    "dev:mobile": "pnpm -F mobile start",
+    "dev:api": "pnpm -F api dev",
+    "build": "turbo run build",
+    "build:web": "pnpm -F web build",
+    "build:api": "pnpm -F api build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "private": "true",
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
