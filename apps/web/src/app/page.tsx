@@ -1,5 +1,27 @@
 import React from "react";
-import { Calendar, LayoutDashboard, UsersRound, UserRoundCog, Send, Bell, Bolt } from "lucide-react";
+import {
+  Calendar,
+  LayoutDashboard,
+  UsersRound,
+  UserRoundCog,
+  Send,
+  Bell,
+  Bolt,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+} from "lucide-react";
+
+const DAYS = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+
 const page = () => {
   return (
     <div className="flex h-full flex-col bg-white">
@@ -11,29 +33,30 @@ const page = () => {
           </div>
           <div>
             <h1 className="text-xl font-bold text-black">Scrubez</h1>
-            <p className="text-gray-500 text-sm">Admin Dashboard</p>
+            <p className="text-gray-500 text-sm">Fairlight Veterinary Services</p>
           </div>
-          <button className="flex flex-row gap-2 items-center bg-gray-100 p-2 rounded-lg cursor-pointer">
-            <LayoutDashboard size={20} color="gray" />
-            <h1 className="text-gray-500 text-md">Dashboard</h1>
-          </button>
-          <button className="flex flex-row gap-2 items-center bg-gray-100 p-2 rounded-lg cursor-pointer">
-            <UsersRound size={20} color="gray" />
-            <h1 className="text-gray-500 text-md">Team</h1>
-          </button>
-          <button className="flex flex-row gap-2 items-center bg-gray-100 p-2 rounded-lg cursor-pointer">
-            <UserRoundCog size={20} color="gray" />
-            <h1 className="text-gray-500 text-md">Roles</h1>
-          </button>
-           <button className="flex flex-row gap-2 items-center bg-gray-100 p-2 rounded-lg cursor-pointer">
-            <Send size={20} color="gray" />
-            <h1 className="text-gray-500 text-md">Requests</h1>
-          </button>
+          <div className="flex flex-row gap-4 ml-5">
+            <button className="flex flex-row gap-2 items-center bg-gray-100 p-2 rounded-lg cursor-pointer">
+              <LayoutDashboard size={20} color="gray" />
+              <h1 className="text-gray-500 text-md">Dashboard</h1>
+            </button>
+            <button className="flex flex-row gap-2 items-center bg-gray-100 p-2 rounded-lg cursor-pointer">
+              <UsersRound size={20} color="gray" />
+              <h1 className="text-gray-500 text-md">Team</h1>
+            </button>
+            <button className="flex flex-row gap-2 items-center bg-gray-100 p-2 rounded-lg cursor-pointer">
+              <UserRoundCog size={20} color="gray" />
+              <h1 className="text-gray-500 text-md">Roles</h1>
+            </button>
+            <button className="flex flex-row gap-2 items-center bg-gray-100 p-2 rounded-lg cursor-pointer">
+              <Send size={20} color="gray" />
+              <h1 className="text-gray-500 text-md">Requests</h1>
+            </button>
+          </div>
         </div>
 
         {/* Right Header */}
         <div className="flex flex-row gap-4 items-center">
-         
           <button>
             <Bell size={24} color="gray" />
           </button>
@@ -46,8 +69,48 @@ const page = () => {
         </div>
       </div>
 
-      <div className="flex flex-row">
+      <div className="flex flex-row  p-5 justify-between items-center border-b border-gray-200">
+        {/* Left */}
+        <div className="flex flex-row gap-4">
+          <div className="flex flex-row gap-10 items-center shadow-md border p-2 rounded-lg">
+            <button>
+              <ChevronLeft size={24} color="black" />
+            </button>
+            <button>
+              <text className="text-xl text-black "> October 25, 2025</text>
+            </button>
+            <button>
+              <ChevronRight size={24} color="black" />
+            </button>
+          </div>
+          <button>
+            <text className="text-md text-white shadow-md p-3 rounded-lg text-lg font-semibold bg-[#F72585]">
+              Today
+            </text>
+          </button>
+        </div>
 
+        {/* Right */}
+        <div>
+          <button className="flex flex-row gap-1 items-center bg-[#3F37C9] px-4 py-2 rounded-lg cursor-pointer">
+            <text className="text-white text-lg font-semibold">Create</text>
+            <Plus size={20} color="white" />
+          </button>
+        </div>
+      </div>
+
+      {/* View for shifts */}
+      <div className="flex-1 overflow-auto p-6">
+        <div className="grid grid-cols-7 border-x border-gray-200 divide-x divide-gray-200">
+          {DAYS.map((day) => (
+            <div
+              key={day}
+              className="flex flex-col items-center justify-center p-4"
+            >
+              <text className="text-black">{day}</text>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
