@@ -3,6 +3,7 @@ stages:
   - deploy
 
 deploy:api:preview:
+  stage: deploy
   rules:
     - if: $CI_PIPELINE_SOURCE == "push"
       changes:
@@ -15,8 +16,9 @@ deploy:api:preview:
     - vercel pull --yes --environment=preview --token="$TOKEN"
     - vercel build --token="$TOKEN"
     - vercel deploy --prebuilt --token="$TOKEN"
-    
+
 deploy:web:preview:
+  stage: deploy
   rules:
     - if: $CI_PIPELINE_SOURCE == "push"
       changes:
