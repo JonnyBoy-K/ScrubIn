@@ -18,7 +18,7 @@ app.get('/health', (_req, res) => {
 });
 
 app.get('/test-endpoint', (req, res) => {
-  res.json({messaage: "App has been deployed v3"});
+  res.json({messaage: "App has been deployed v4"});
 }) 
 // app.get('/me', ClerkExpressWithAuth(), requireSession(), (req, res) => {
 //   res.json({ userId: req.auth?.userId, sessionId: req.auth?.sessionId });
