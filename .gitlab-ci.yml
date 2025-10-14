@@ -6,12 +6,19 @@ stages:
 deploy:api:preview:
   stage: deploy
   rules:
-    - if: $CI_PIPELINE_SOURCE == "push"
+    # Pushes into dev
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_REF_NAME == "dev"'
       changes:
         - apps/api/**/*
         - apps/api/prisma/**/*
         - packages/schemas/**/*
-
+    # Merge Requests targeting dev
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "dev"'
+      changes:
+        - apps/api/**/*
+        - apps/api/prisma/**/*
+        - packages/schemas/**/*
+  
   script:
     - npm install --global vercel
     - npm install --global pnpm
@@ -23,11 +30,15 @@ deploy:api:preview:
 deploy:web:preview:
   stage: deploy
   rules:
-    - if: $CI_PIPELINE_SOURCE == "push"
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_REF_NAME == "dev"'
       changes:
         - apps/web/**/*
         - packages/schemas/**/*    
 
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "dev"'
+      changes:
+        - apps/web/**/*
+        - packages/schemas/**/*    
   script:
     - npm install --global vercel
     - npm install --global pnpm
@@ -57,10 +68,15 @@ expose:web:environment:
     - job: deploy:web:preview
       artifacts: true
   rules:
-    - if: $CI_PIPELINE_SOURCE == "push"
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_REF_NAME == "dev"'
       changes:
         - apps/web/**/*
-        - packages/schemas/**/*  
+        - packages/schemas/**/*    
+
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "dev"'
+      changes:
+        - apps/web/**/*
+        - packages/schemas/**/*      
   script:
     - echo "Publishing environment URL $WEB_PREVIEW_URL"
   environment:
