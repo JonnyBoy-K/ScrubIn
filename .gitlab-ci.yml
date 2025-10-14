@@ -1,6 +1,7 @@
 stages:
   # - build
   - deploy
+  - expose
 
 deploy:api:preview:
   stage: deploy
@@ -16,8 +17,8 @@ deploy:api:preview:
     - npm install --global pnpm
     - cd apps/api
     - vercel pull --yes --environment=preview --token="$TOKEN"
-    - vercel build --token="$TOKEN"
-    - vercel deploy --prebuilt --token="$TOKEN"
+    - vercel deploy --token="$TOKEN"
+
 
 deploy:web:preview:
   stage: deploy
@@ -30,6 +31,39 @@ deploy:web:preview:
   script:
     - npm install --global vercel
     - npm install --global pnpm
+    - cd apps/web
     - vercel pull --yes --environment=preview --token="$TOKEN"
-    - vercel build --token="$TOKEN"
-    - vercel deploy --prebuilt --token="$TOKEN"
+    - |
+      API_HOST=$(vercel list api --token="$TOKEN" --environment=preview --status READY \
+        | grep -Eo 'https://[A-Za-z0-9-]+\.vercel\.app' | head -n1)
+      [ -z "$API_HOST" ] && { echo "No API preview found"; exit 1; }
+      export API_HOST
+    - |
+      WEB_HOST=$(vercel deploy --token="$TOKEN" --yes \
+        --env NEXT_PUBLIC_API_URL="$API_HOST" \
+        --env NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY" \
+        --env CLERK_SECRET_KEY="$CLERK_SECRET_KEY" \
+        --json | jq -r '.url')
+      [ -z "$WEB_HOST" ] && { echo "No web preview URL returned"; exit 1; }
+      echo "WEB_PREVIEW_URL=$WEB_HOST" > web.env
+  artifacts:
+    reports:
+      dotenv: web.env   # exposes $WEB_PREVIEW_URL to downstream jobs
+    expire_in: 7 days
+
+
+expose:web:environment:
+  stage: expose
+  needs:
+    - job: deploy:web:preview
+      artifacts: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
+      changes:
+        - apps/web/**/*
+        - packages/schemas/**/*  
+  script:
+    - echo "Publishing environment URL $WEB_PREVIEW_URL"
+  environment:
+    name: staging
+    url: $WEB_PREVIEW_URL
