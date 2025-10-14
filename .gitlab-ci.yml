@@ -6,13 +6,12 @@ stages:
 deploy:api:preview:
   stage: deploy
   rules:
-    # Pushes into dev
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_REF_NAME == "dev"'
       changes:
         - apps/api/**/*
         - apps/api/prisma/**/*
         - packages/schemas/**/*
-    # Merge Requests targeting dev
+
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "dev"'
       changes:
         - apps/api/**/*
@@ -61,7 +60,6 @@ deploy:web:preview:
       dotenv: web.env   # exposes $WEB_PREVIEW_URL to downstream jobs
     expire_in: 7 days
 
-
 expose:web:environment:
   stage: expose
   needs:
@@ -82,3 +80,52 @@ expose:web:environment:
   environment:
     name: staging
     url: $WEB_PREVIEW_URL
+
+deploy:api:production:
+  stage: deploy
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_REF_NAME == "main"'
+      changes:
+        - apps/api/**/*
+        - apps/api/prisma/**/*
+        - packages/schemas/**/*
+
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
+      changes:
+        - apps/api/**/*
+        - apps/api/prisma/**/*
+        - packages/schemas/**/*
+  script:
+    - npm install --global vercel
+    - npm install --global pnpm
+    - cd apps/api
+    - vercel pull --yes --environment=production --token="$TOKEN"
+    - vercel deploy --yes --prod --token="$TOKEN"
+
+deploy:web:production:
+  stage: deploy
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_REF_NAME == "main"'
+      changes:
+        - apps/web/**/*
+        - packages/schemas/**/*    
+
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
+      changes:
+        - apps/web/**/*
+        - packages/schemas/**/*    
+  script:
+    - npm i -g vercel pnpm
+    - cd apps/web
+    - vercel pull --yes --environment=production --token="$TOKEN"
+    - vercel deploy --yes --prod --token="$TOKEN" \
+        --env NEXT_PUBLIC_API_URL="https://api-flax-iota.vercel.app/" \
+        --build-env NEXT_PUBLIC_API_URL="https://api-flax-iota.vercel.app/" \
+        --env NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY" \
+        --build-env NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY" \
+        --env CLERK_SECRET_KEY="$CLERK_SECRET_KEY"
+  environment:
+    name: production
+    url: https://web-rho-rouge.vercel.app
+
+
