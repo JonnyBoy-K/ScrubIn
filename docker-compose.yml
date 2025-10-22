@@ -1,0 +1,17 @@
+services:
+  db:
+    image: postgres:14
+    container_name: schedulingapp-db
+    restart: always
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      # These are ignored if the DB is already initialized
+      POSTGRES_USER: schedulinglocal
+      POSTGRES_PASSWORD: scooby
+      POSTGRES_DB: schedulingdb
+
+volumes:
+  pgdata:
