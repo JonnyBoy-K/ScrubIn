@@ -25,14 +25,16 @@ export default function RootLayout({
 }>) {
   const publishableKey = "pk_test_ZXhjaXRpbmctcGFycm90LTQxLmNsZXJrLmFjY291bnRzLmRldiQ";
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <ClerkProvider publishableKey={publishableKey}>
+    <ClerkProvider publishableKey={publishableKey}>
+
+      <html lang="en">
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        >
           {children}
-        </ClerkProvider>
-      </body>
-    </html>
+        </body>
+      </html>
+    </ClerkProvider>
+
   );
 }
