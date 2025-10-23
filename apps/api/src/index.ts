@@ -17,18 +17,6 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
-app.get('/test', async (req, res) => {
-  
-  const user = await prisma.user.create({
-    data: {
-      email: `${randomUUID()}@gmail.com`,
-      phoneNumber: `${randomInt(1000000, 30000000)}`
-    }
-  })
-
-  res.json({user});
-}) 
-
 
 
 const port = process.env.PORT ?? 4000
