@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import { prisma } from './db';
 import { randomInt, randomUUID } from 'crypto';
+import testRoutes from './routes/test'
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
+app.use('/api', testRoutes);
 
 
 const port = process.env.PORT ?? 4000
