@@ -26,11 +26,11 @@ model UserWorkspaceMembership {
 }
 
 model Workspace {
-  id                      Int                       @id @default(autoincrement())
-  adminId                 Int
-  location                String
-  UserWorkspaceMembership UserWorkspaceMembership[]
-  UserRoleMembership      UserRoleMembership[]
+  id              Int                       @id @default(autoincrement())
+  adminId         Int
+  location        String
+  memberships     UserWorkspaceMembership[]
+  roleMemberships UserRoleMembership[]
 }
 
 model Shift {
