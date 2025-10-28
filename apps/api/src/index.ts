@@ -6,6 +6,7 @@ import morgan from 'morgan'
 import { prisma } from './db'
 import { randomInt, randomUUID } from 'crypto'
 import { clerkMiddleware, getAuth } from '@clerk/express'
+import { verifyWebhook } from '@clerk/express/webhooks'
 
 const app = express()
 
@@ -33,6 +34,7 @@ app.post('/workspace', async (req, res) => {
     }
     const workspace = await prisma.workspace.create({
         data: {
+            name: req.body.name,
             adminId: user.id,
             location: req.body.location,
             memberships: {
@@ -42,7 +44,22 @@ app.post('/workspace', async (req, res) => {
     });
 
     res.json(workspace).status(200);
-})
+});
+
+app.post("/clerk/webhook", async (req, res) => {
+    const evt = await verifyWebhook(req);
+    const { id } = evt.data;
+    
+    if (evt.type === 'user.created') {
+        await prisma.user.create({
+            data: {
+                clerkId: id
+            }
+        });
+
+    }
+
+}); 
 
 app.get('/workspace', (req, res) => {
     res.json(getAuth(req))
