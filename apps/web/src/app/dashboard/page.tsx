@@ -1,15 +1,7 @@
 "use client";
 import { useAuth, SignedIn, UserButton } from "@clerk/nextjs";
 import React, { useState } from "react";
-import {
-  Spin,
-  Modal,
-  Select,
-  TimePicker,
-  DatePicker,
-  Button,
-  Flex,
-} from "antd";
+import { Spin, Alert } from "antd";
 import {
   Calendar,
   LayoutDashboard,
@@ -23,6 +15,7 @@ import {
   Plus,
   Clock,
 } from "lucide-react";
+import AddShiftModal from "../../../components/AddShiftModal";
 
 type Shift = {
   id: number;
@@ -43,28 +36,20 @@ const DAYS = [
   "Saturday",
 ];
 
-const { RangePicker } = DatePicker;
-
 const page = () => {
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [isLoading, setIsLoading] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   {
     /* Modal Selections */
   }
-  const [employee, setEmployee] = useState<string>("");
-  const [Dates, setDates] = useState<string[]>([""]);
-  const [startTime, setStartTime] = useState<string>("");
-  const [endTime, setEndTime] = useState<string>("");
 
   const showModal = () => {
     setIsModalOpen(true);
   };
 
-  const handleCancel = () => {
-    setIsModalOpen(false);
-  };
+ 
   const [shift, setShift] = useState<Shift[]>([
     {
       id: 1,
@@ -123,10 +108,6 @@ const page = () => {
     })}`;
   };
 
-  const onChange = (date: any, dateString: [string, string]) => {
-    setDates(dateString);
-    console.log(date, dateString);
-  };
 
   return (
     <SignedIn>
@@ -225,73 +206,8 @@ const page = () => {
           </div>
         </div>
 
-        <Modal
-          open={isModalOpen}
-          onCancel={handleCancel}
-          footer={null}
-          width={"full"}
-          centered
-        >
-          <div className="flex flex-col items-center gap-4">
-            <text className="text-xl font-bold">Add Shift</text>
-            {/* Container */}
-            <div className="flex flex-row gap-5 w-full justify-evenly ">
-              {/* Employee Selection */}
-              <div className="flex flex-col">
-                <text className="text-md font-semibold">Employee</text>
-                <Select
-                  showSearch
-                  style={{ width: 200 }}
-                  placeholder="Select Employee"
-                  onChange={(value) => setEmployee(value)}
-                  options={[
-                    { value: "Alice Cartel", label: "Alice Cartel" },
-                    { value: "Bob Itsaboy", label: "Bob Itsaboy" },
-                    { value: "Jonny Bravo", label: "Jonny Bravo" },
-                    { value: "David Suzuki", label: "David Suzuki" },
-                    { value: "Adam Eve", label: "Adam Eve" },
-                  ]}
-                />
-              </div>
-              {/* Time Selection */}
-              <div className="flex flex-col">
-                <text className="font-semibold">Time</text>
-                <TimePicker.RangePicker 
-                format={"HH:mm"} 
-                onChange={(vals, timeStrings) => {
-                  setStartTime(timeStrings[0]);
-                  setEndTime(timeStrings[1]);
-                }}
-                />
-              </div>
-              {/* Date Selection */}
-              <div className="flex flex-col min-w-[200px]">
-                <text className="font-semibold">Date</text>
-                <Flex>
-                  <DatePicker
-                    multiple
-                    format={"YYYY-MM-DD"}
-                    maxTagCount={"responsive"}
-                    onChange={(vals, strs) => {
-                      // vals: Dayjs[] | null, strs: string[]
-                      setDates(strs as string[]);
-                    }}
-                  />
-                </Flex>
-              </div>
-            </div>
-            <div className="mt-4 flex w-full justify-center gap-2">
-              <Button>
-                <span className="text-black font-semibold">Cancel</span>
-              </Button>
-              <Button type="primary" className="bg-[#F72585]" onClick={() => 
-                {console.log(`StartTime: ${startTime}, EndTime: ${endTime}, Employee: ${employee}, Dates: ${Dates}`);
-                handleCancel();}}>
-                Add Shift
-              </Button>
-            </div>
-          </div>
-        </Modal>
+        {/* Adding Shifts Modal */}
+        <AddShiftModal open={isModalOpen} setOpen={setIsModalOpen} />
 
         {/* View for shifts */}
         <div className="flex-1 overflow-auto p-6">
