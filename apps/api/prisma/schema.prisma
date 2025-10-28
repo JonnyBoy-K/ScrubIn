@@ -27,6 +27,7 @@ model UserWorkspaceMembership {
 
 model Workspace {
   id              Int                       @id @default(autoincrement())
+  name            String
   adminId         Int
   location        String
   memberships     UserWorkspaceMembership[]
