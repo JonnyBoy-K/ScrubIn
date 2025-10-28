@@ -16,11 +16,38 @@ import { Plus } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@clerk/nextjs";
+
 export default function CreateWorkspaceCard() {
     const [isOpen, setIsOpen] = useState(false);
     const [name, setName] = useState("");
     const [location, setLocation] = useState("");
+    const { getToken } = useAuth();
     
+    const handleWorkspaceCreation = async () => {
+
+        const token = await getToken();
+        const res = await fetch("http://localhost:4000/workspace", {
+            method: 'POST',
+            headers: { "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+             }, 
+            body: JSON.stringify({
+                name,
+                location
+            })
+        });
+
+
+        if (!res.ok) {
+            console.error("Workspace Not Created");
+            return;
+        }
+
+        setName("");
+        setLocation("");
+        setIsOpen(false);
+    }
 
     return (
         <>
@@ -66,7 +93,7 @@ export default function CreateWorkspaceCard() {
                             Cancel
                         </Button>
 
-                        <Button onClick={()=>console.log(5)} disabled={!name.trim() || !location.trim()}>Create</Button>
+                        <Button onClick={handleWorkspaceCreation} disabled={!name.trim() || !location.trim()}>Create</Button>
                     </DialogFooter>
 
                 </DialogContent>
