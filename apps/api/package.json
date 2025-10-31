@@ -21,13 +21,13 @@
     "extends": "eslint:recommended"
   },
   "prettier": {
-    "singleQuote": "true",
-    "semi": "false",
+    "singleQuote": true,
+    "semi": false,
     "trailingComma": "all",
-    "printWidth": "100",
+    "printWidth": 100,
     "arrowParens": "always",
-    "tabWidth": "2",
-    "useTabs": "false"
+    "tabWidth": 4,
+    "useTabs": false
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
