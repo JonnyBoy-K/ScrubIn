@@ -10,7 +10,7 @@ export default function WorkspaceCard({workspace}) {
     const router = useRouter();
 
     return (
-        <Card className="hover:bg-gray-50 hover:cursor-pointer" onClick={() => router.push('/dashboard')}>
+        <Card className="hover:bg-gray-50 hover:cursor-pointer" onClick={() => router.push(`/workspaces/${workspace.id}/dashboard`)}>
             <CardHeader className="flex items-center justify-between">
                 <CardTitle>{workspace.name}</CardTitle>
             </CardHeader>

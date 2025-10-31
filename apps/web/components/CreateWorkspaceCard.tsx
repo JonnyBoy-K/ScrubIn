@@ -23,11 +23,11 @@ export default function CreateWorkspaceCard() {
     const [name, setName] = useState("");
     const [location, setLocation] = useState("");
     const { getToken } = useAuth();
-    
+
     const handleWorkspaceCreation = async () => {
 
         const token = await getToken();
-        const res = await fetch("http://localhost:4000/workspace", {
+        const res = await fetch("http://localhost:4000/workspaces", {
             method: 'POST',
             headers: { "Content-Type": "application/json",
                 "Authorization": `Bearer ${token}`
