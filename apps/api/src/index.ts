@@ -93,7 +93,10 @@ app.post('/dummy-setup', async (req, res) => {
 app.post('/dummy-create-shift', async(req,res) => {
   
   try {
-    const {worspaceId, employee, shifts, breakDuration} = req.body;
+    const {workspaceId, employee /* should be userId */, shifts, breakDuration} = req.body;
+    /*
+      Need checks on variables workspaceId, userId(employee for right now), breakDuration
+    */
   
   
     const rows = shifts.map(({startTime, endTime}: {startTime: string, endTime: string}) => {
@@ -105,8 +108,8 @@ app.post('/dummy-create-shift', async(req,res) => {
     
       return {
         userId: employee,
-        worspaceId: Number(worspaceId),
-        breakDuration: Number(worspaceId) || 30,
+        workspaceId: Number(workspaceId),
+        breakDuration: Number(breakDuration) || 30,
         startTime: start,
         endTime: end
       }
@@ -130,5 +133,7 @@ app.listen(port, () => {
   // eslint-disable-next-line no-console
   console.log(`API listening on http://localhost:${port}`);
 });
+
+
 
 

@@ -23,13 +23,13 @@ const AddShiftModal: React.FC<AddShiftModalProps> = ({ open, setOpen }) => {
   const [timeRange, setTimeRange] = useState<[Dayjs, Dayjs] | null>(null);
   const [alertDesc, setAlertDesc] = useState<string | null>(null);
   const [openAlert, setOpenAlert] = useState(false);
+  const [isLoading, setIsloading] = useState(false);
 
   const handleCancel = () => {
     setOpen(false);
   };
 
   const handleSubmit = async () => {
-
     if (!employee || !dates || !timeRange) {
       setAlertDesc("Please fill in all fields.");
       setOpenAlert(true);
@@ -45,26 +45,30 @@ const AddShiftModal: React.FC<AddShiftModalProps> = ({ open, setOpen }) => {
       shifts,
     };
 
-    const res = await fetch(`${process.env.API_URL}/dummy-create-shift`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+    try {
+      const res = await fetch(`http://localhost:4000/dummy-create-shift`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
 
-      body: JSON.stringify(payload),
-    });
+        body: JSON.stringify(payload),
+      });
 
-    if (!res.ok) throw new Error((await res.json()) || `HTTP ${res.status}`);
-    const data = await res.json(); 
+      if (!res.ok) throw new Error((await res.json()) || `HTTP ${res.status}`);
+      const data = await res.json();
 
-    console.log(data.inserted);
-    console.log("Submitting shift:", payload);
-    setAlertDesc(null);
-    setOpenAlert(false);
-    setEmployee(undefined);
-    setDates(null);
-    setTimeRange(null);
-    setOpen(false);
+      console.log(data.inserted);
+      console.log("Submitting shift:", payload);
+      setAlertDesc(null);
+      setOpenAlert(false);
+      setEmployee(undefined);
+      setDates(null);
+      setTimeRange(null);
+      setOpen(false);
+    } catch (e) {
+      console.log("Error adding shifts", e);
+    }
   };
 
   const withTime = (d: Dayjs, t: Dayjs) =>
