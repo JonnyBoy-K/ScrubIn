@@ -17,6 +17,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import AddMemberModal from "../../../../components/AddMemberModal";
 
 type Member = {
   id: number,
@@ -64,6 +65,8 @@ export default function TeamPage() {
     closeConfirm();
   }
 
+  const [addOpen, setAddOpen] = React.useState(false);
+
   return (
     <main className="p-6 max-w-6xl mx-auto">
       <header className="flex items-center justify-between mb-6">
@@ -72,7 +75,10 @@ export default function TeamPage() {
           <h1 className="text-2xl font-semibold text-gray-700">Team</h1>
         </div>
         <div className="text-white">
-          <button className="inline-flex items-center gap-2 rounded-lg px-4 py-2 bg-[#3F37C9] hover:bg-[#2E299A]">
+          <button 
+            onClick={() => setAddOpen(true)}
+            className="inline-flex items-center gap-2 rounded-lg px-4 py-2 bg-[#3F37C9] hover:bg-[#2E299A]"
+          >
             <Plus size={18} /> Add member
           </button>
         </div>
@@ -165,7 +171,7 @@ export default function TeamPage() {
                               </AlertDialogHeader>
 
                               <AlertDialogFooter>
-                                <AlertDialogCancel onClick={closeConfirm} className="hover:bg-gray-200">Cancel</AlertDialogCancel>
+                                <AlertDialogCancel onClick={closeConfirm} className="hover:border-blue-500">Cancel</AlertDialogCancel>
                                 <AlertDialogAction onClick={confirmRemove} className="bg-red-600 hover:bg-red-700">
                                   <div className="text-white">
                                   Confirm remove
@@ -184,6 +190,11 @@ export default function TeamPage() {
         </tbody>
         </table>
       </div>
+      <AddMemberModal
+        open={addOpen}
+        setOpen={setAddOpen}
+        inviteLink="https://google.com"
+      />
     </main>
   );
 }
