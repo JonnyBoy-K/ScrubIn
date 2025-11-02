@@ -29,11 +29,13 @@ type Member = {
 
 export default function TeamPage() {
   // temporary mock data
-  const members: Member[] = [
+  const seedmembers: Member[] = [
     { id: 1, name: "Admin Annie", role: "Admin", email: "annie@clinic.com", phone: "306-555-1000"},
     { id: 2, name: "SubAdmin Sam", role: "Sub-Admin", email: "sam@clinic.com", phone: "306-555-2000"},
     { id: 3, name: "Regular Reggie", role: "Employee", email: "reggie@clinic.com", phone: "306-555-3000"},
   ];
+
+  const [members, setMembers] = React.useState<Member[]>(seedmembers);
 
   // Tracks if that member has a toggled (expanded) row, showing email, phone and remove
   const [expanded, setExpanded] = React.useState<Record<number, boolean>>({});
@@ -60,10 +62,12 @@ export default function TeamPage() {
   }
 
   function confirmRemove() {
-    //TODO: add api call and visual mutations
-    console.log("Confirmed remove for: ", confirmState.member);
+    const id = confirmState.member?.id
+    if (id == null) return;
+
+    setMembers(prev => prev.filter(m => m.id !== id));
     closeConfirm();
-  }
+    } 
 
   const [addOpen, setAddOpen] = React.useState(false);
 
@@ -84,19 +88,22 @@ export default function TeamPage() {
         </div>
       </header>
 
-      <div className="overflow-x-auto rounded-2xl border text-gray-500">
+      <div className="overflow-x-auto rounded-2xl border border-gray-400 text-gray-500">
         <table className="min-w-full text-left">
-          <colgroup>
-            <col className="w-1/2" />     {/* Name */}
-            <col className="w-5/12" />    {/* Role */}
-            <col className="w-1/12" />    {/* Actions (chevron/remove) */}
-          </colgroup>
+          <colgroup><col className="w-1/2" /><col className="w-5/12" /><col className="w-1/12" /></colgroup>
           <thead className="bg-gray-300">
-            <tr>
+            <tr className="border-b border-gray-400">
               <th className="p-3 text-gray-800">Name</th>
               <th className="p-3 text-gray-800">Role</th>
               <th className="p-3"></th>
             </tr>
+              {members.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="p-6 text-center text-gray-500 bg-white">
+                    No team members yet. Click <span className="font-semibold">Add member</span> to invite someone.
+                  </td>
+                </tr>
+              ) : null}
           </thead>
           
           <tbody className="bg-white">
@@ -106,7 +113,7 @@ export default function TeamPage() {
 
             return (
               <React.Fragment key={m.id}>
-                <tr className="border-t">
+                <tr className="border-t border-gray-400">
                   <td className="p-3">{m.name}</td>
                   <td className="p-3">{m.role}</td>
                   <td className="p-3">
