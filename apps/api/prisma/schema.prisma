@@ -10,7 +10,7 @@ datasource db {
 
 model User {
   id                      Int                       @id @default(autoincrement())
-  clerkId                 String?
+  clerkId                 String                    @unique
   createdAt               DateTime                  @default(now())
   updatedAt               DateTime                  @updatedAt
   UserWorkspaceMembership UserWorkspaceMembership[]
@@ -26,11 +26,12 @@ model UserWorkspaceMembership {
 }
 
 model Workspace {
-  id                      Int                       @id @default(autoincrement())
-  adminId                 Int
-  location                String
-  UserWorkspaceMembership UserWorkspaceMembership[]
-  UserRoleMembership      UserRoleMembership[]
+  id              Int                       @id @default(autoincrement())
+  name            String
+  adminId         Int
+  location        String
+  memberships     UserWorkspaceMembership[]
+  roleMemberships UserRoleMembership[]
 }
 
 model Shift {
