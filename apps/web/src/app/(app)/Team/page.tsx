@@ -156,17 +156,17 @@ export default function TeamPage() {
 
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>
+                                <AlertDialogTitle className="font-bold">
                                   Remove {confirmState.member?.name}?
                                 </AlertDialogTitle>
-                                <AlertDialogDescription>
+                                <AlertDialogDescription className="text-gray-700">
                                   This will remove this user from your team. You cannot undo this action.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
 
                               <AlertDialogFooter>
-                                <AlertDialogCancel onClick={closeConfirm}>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={confirmRemove}>
+                                <AlertDialogCancel onClick={closeConfirm} className="hover:bg-gray-200">Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={confirmRemove} className="bg-red-600 hover:bg-red-700">
                                   <div className="text-white">
                                   Confirm remove
                                   </div>
