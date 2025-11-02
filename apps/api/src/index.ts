@@ -8,6 +8,7 @@ import { clerkMiddleware, getAuth } from '@clerk/express'
 import { verifyWebhook } from '@clerk/express/webhooks'
 import { getWorkspaceMembership } from './utils/authz'
 import { randomUUID } from 'node:crypto'
+import { error } from 'node:console'
 
 const app = express()
 
@@ -220,11 +221,31 @@ app.post('/invitations', async (req, res) => {
 
         res.status(200).json(invitation)
     } else {
-        res.status(403).json({ error: 'Unauthorized to create invitations for the workspace' })
+        res.status(403).json({ error: 'Unauthorized to create invitations for this workspace' })
     }
+})
+
+app.post('/invitations/:id/accept', async (req, res) => {
+    const { id: invitationId } = req.params
+    const { userId } = getAuth(req)
+
+    const invitation = await prisma.invitation.findFirst({
+        where: {
+            id: invitationId,
+        },
+    })
+
+    if (!invitation) {
+        return res.status(404).json({ error: 'Invitation not Found' })
+    }
+
+    prisma.userWorkspaceMembership.create({
+        data: {
+            user: { connect: { clerkId: userId } },
+            workspace: { connect: { id: invitation.workspaceId } },
+        },
+    });
 });
-
-
 
 app.post('/clerk/webhook', async (req, res) => {
     const evt = await verifyWebhook(req)
