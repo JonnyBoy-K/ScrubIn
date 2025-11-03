@@ -9,7 +9,8 @@
 		"dev:api": "pnpm -F api dev",
 		"build": "turbo run build",
 		"build:web": "pnpm -F web build",
-		"build:api": "pnpm -F api build"
+		"build:api": "pnpm -F api build",
+    "db": "pnpm -F api db"
 	},
 	"keywords": [],
 	"author": "",

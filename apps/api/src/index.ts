@@ -5,7 +5,7 @@ import helmet from 'helmet'
 import morgan from 'morgan'
 import { prisma } from './db'
 import { randomInt, randomUUID } from 'crypto'
-import { clerkMiddleware, getAuth } from '@clerk/express'
+import { clerkClient, clerkMiddleware, getAuth } from '@clerk/express'
 import { verifyWebhook } from '@clerk/express/webhooks'
 import { getWorkspaceMembership } from './utils/authz'
 
@@ -205,6 +205,123 @@ app.post('/clerk/webhook', async (req, res) => {
     const evt = await verifyWebhook(req)
     const { id, first_name, last_name } = evt.data as UserJSON
 
+    const workspaceId = req.body.workspaceId
+
+    const user = await prisma.user.findFirst({
+        where: {
+            clerkId: userId,
+        },
+    })
+
+    if (!user) {
+        return res.status(404).json({ error: 'User not found' })
+    }
+
+    const workspace = await prisma.workspace.findFirst({
+        where: {
+            id: workspaceId,
+        },
+    })
+
+    if (!workspace) {
+        return res.status(404).json({ error: 'User not found' })
+    }
+
+    if (workspace.adminId === user.id) {
+        const invitation = await prisma.invitation.create({
+            data: {
+                workspaceId,
+            },
+        })
+
+        res.status(200).json(invitation)
+    } else {
+        res.status(403).json({ error: 'Unauthorized to create invitations for this workspace' })
+    }
+})
+
+app.get('/invitations/:id', async (req, res) => {
+    const { isAuthenticated, userId: clerkId } = getAuth(req)
+    
+    console.log(clerkId)
+    if (!isAuthenticated) {
+        return res.status(401).json({ error: 'Unauthenicated' })
+    }
+
+    const invitation = await prisma.invitation.findFirst({
+        where: {
+            id: req.params.id,
+        },
+    })
+
+    if (!invitation) {
+        return res.status(404).json({ error: 'Invitation Not Found' })
+    }
+
+    const workspace = await prisma.workspace.findFirst({
+        where: {
+            id: invitation.workspaceId,
+        },
+    })
+
+    if (!workspace) {
+        return res.status(404).json({ error: 'Workspace Not Found' })
+    }
+
+    const user = await prisma.user.findFirst({
+        where: {
+            id: workspace.adminId,
+        },
+    })
+
+    if (!user) {
+        return res.status(404).json({ error: 'User Not Found' })
+    }
+
+    const { fullName, primaryEmailAddress } = await clerkClient.users.getUser(clerkId)
+
+    res.status(200).json({
+        workspaceName: workspace.name,
+        workspaceOwnerName: fullName,
+        workspaceOwnerEmail: primaryEmailAddress?.emailAddress,
+        invitationId: invitation.id,
+    })
+})
+
+app.post('/invitations/:id/accept', async (req, res) => {
+    const { id: invitationId } = req.params
+    const { userId } = getAuth(req)
+
+    const invitation = await prisma.invitation.findFirst({
+        where: {
+            id: invitationId,
+        },
+    })
+
+    if (!invitation) {
+        return res.status(404).json({ error: 'Invitation not Found' })
+    }
+
+    const membership = await prisma.userWorkspaceMembership.create({
+        data: {
+            user: { connect: { clerkId: userId } },
+            workspace: { connect: { id: invitation.workspaceId } },
+        },
+    });
+
+
+    res.status(200).json(membership);
+
+    await prisma.invitation.delete({
+        where: {
+            id: invitation.id
+        }
+    });
+})
+
+app.post('/clerk/webhook', async (req, res) => {
+    const evt  = await verifyWebhook(req)
+    const { id } = evt.data
     if (evt.type === 'user.created') {
         await prisma.user.create({
             data: {

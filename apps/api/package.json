@@ -7,6 +7,7 @@
         "build": "tsc -p tsconfig.json",
         "dev": "tsx watch src/index.ts",
         "start": "node dist/index.js",
+        "db": "pnpx supabase start",
         "postinstall": "prisma generate"
     },
     "keywords": [],
