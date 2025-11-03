@@ -117,7 +117,7 @@ const AddShiftModal: React.FC<AddShiftModalProps> = ({ open, setOpen }) => {
                 value={employee}
                 style={{ width: 200 }}
                 placeholder="Select Employee"
-                onChange={(value) => setEmployee(2)}
+                onChange={(value) => setEmployee(1)}
                 options={[
                   { value: "Alice Cartel", label: "Alice Cartel" },
                   { value: "Bob Itsaboy", label: "Bob Itsaboy" },

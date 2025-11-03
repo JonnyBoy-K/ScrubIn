@@ -4,7 +4,7 @@ import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
 import { prisma } from './db'
-import { clerkMiddleware, getAuth } from '@clerk/express'
+import { clerkMiddleware, getAuth, UserJSON } from '@clerk/express'
 import { verifyWebhook } from '@clerk/express/webhooks'
 import { getWorkspaceMembership } from './utils/authz'
 import { randomUUID } from 'node:crypto'
@@ -85,13 +85,18 @@ app.post('/workspaces', async (req, res) => {
 })
 
 app.post('/dummy-setup', async (req, res) => {
-    const { userId, location = 'Canada', roleName = 'DummyAdmin', permissions = 0 } = req.body
+    const { userId, location = 'Canada', roleName = 'DummyAdmin', permissions = 0, firstName, lastName } = req.body
     try {
         const result = await prisma.$transaction(async (tx) => {
             // Create User
             const user = userId
                 ? await tx.user.findUnique({ where: { id: Number(userId) } })
-                : await tx.user.create({ data: { clerkId: `dummy-${randomUUID()}` } })
+                : await tx.user.create({ 
+                    data: { 
+                        clerkId: `dummy-${randomUUID()}`,
+                        firstName,
+                        lastName,
+                    } })
 
             if (!user) {
                 return { status: 404, error: `User ${userId} not found` }
@@ -100,7 +105,7 @@ app.post('/dummy-setup', async (req, res) => {
             // Create Workspace
             const workspace = await tx.workspace.create({
                 data: {
-                    name: "Test",
+                    name: 'Test',
                     adminId: user.id,
                     location,
                 },
@@ -189,17 +194,19 @@ app.post('/dummy-create-shift', async (req, res) => {
 
 app.post('/clerk/webhook', async (req, res) => {
     const evt = await verifyWebhook(req)
-    const { id } = evt.data
+    const {id, first_name, last_name} = evt.data as UserJSON
 
     if (evt.type === 'user.created') {
+        
         await prisma.user.create({
             data: {
+                firstName: first_name,
+                lastName: last_name,
                 clerkId: id,
             },
         })
     }
 })
-
 
 /*
   Will need checks in the future for duplicate shifts.
@@ -243,6 +250,44 @@ app.put('/shift/:id', async (req, res) => {
     }
 })
 
+/*
+    Needs more saftey checks
+*/
+app.delete('/shift/:id', async (req, res) => {
+    try {
+        const id = Number(req.params.id)
+        if (!Number.isInteger(id)) return res.status(400).json({ error: 'Invalid id' })
+        await prisma.shift.delete({ where: { id: Number(id) } })
+
+        res.status(200).json({ message: 'Shift deleted' })
+    } catch (err) {
+        console.log('Error in index route', err)
+        res.status(500).json({ message: 'Internal server error' })
+    }
+})
+
+app.get('/shifts/:workspaceId', async (req, res) => {
+    try {
+        const workspaceId = Number(req.params.workspaceId)
+        const { start, end } = req.body
+        if (!Number.isInteger(workspaceId))
+            return res.status(400).json({ message: 'Invalid workspaceId' })
+
+        const startDate = new Date(start)
+        const endDate = new Date(end)
+
+        const shifts = await prisma.shift.findMany({
+            where: { workspaceId, startTime: { lt: endDate }, endTime: { gt: startDate } },
+            orderBy: { startTime: 'asc' },
+            include: {user: true}
+        })
+
+        res.status(200).json(shifts)
+    } catch (error) {
+        console.log('Error in index route', error)
+        res.status(500).json({ message: 'Internal server error' })
+    }
+})
 
 const port = process.env.PORT ?? 4000
 app.listen(port, () => {
