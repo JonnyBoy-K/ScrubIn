@@ -89,6 +89,7 @@ model Invitation {
   id          String    @id @default(uuid())
   workspaceId Int
   expiresAt   DateTime? @default(dbgenerated("now() + interval '1 day'")) @db.Timestamptz(6)
+  acceptedAt DateTime?
 }
 
 model Meeting {
