@@ -100,6 +100,7 @@ app.post('/dummy-setup', async (req, res) => {
             // Create Workspace
             const workspace = await tx.workspace.create({
                 data: {
+                    name: "Test",
                     adminId: user.id,
                     location,
                 },
@@ -199,6 +200,7 @@ app.post('/clerk/webhook', async (req, res) => {
     }
 })
 
+
 /*
   Will need checks in the future for duplicate shifts.
   If userId is switched as well need to check for duplicates.
@@ -208,7 +210,7 @@ app.put('/shift/:id', async (req, res) => {
         const id = Number(req.params.id)
         if (!Number.isInteger(id)) return res.status(400).json({ error: 'Invlaid Id' })
 
-        const shift = prisma.shift.findUnique({ where: { id: id } })
+        const shift = await prisma.shift.findUnique({ where: { id: id } })
 
         if (!shift) return res.status(404).json({ error: `shift: ${id} was not found` })
 
@@ -225,7 +227,7 @@ app.put('/shift/:id', async (req, res) => {
 
         // Could do an additional check to see if userId breakDuration or workSpaceId are integers
 
-        const updated = prisma.shift.update({
+        const updated = await prisma.shift.update({
             where: { id: id },
             data: {
                 startTime,
@@ -240,7 +242,6 @@ app.put('/shift/:id', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' })
     }
 })
-
 
 
 const port = process.env.PORT ?? 4000
