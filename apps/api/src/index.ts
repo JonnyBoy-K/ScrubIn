@@ -1,13 +1,13 @@
-import 'dotenv/config'
-import express from 'express'
-import cors from 'cors'
-import helmet from 'helmet'
-import morgan from 'morgan'
-import { prisma } from './db'
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import { prisma } from './db';
+import { randomInt, randomUUID } from 'crypto';
 import { clerkMiddleware, getAuth } from '@clerk/express'
 import { verifyWebhook } from '@clerk/express/webhooks'
 import { getWorkspaceMembership } from './utils/authz'
-import { randomUUID } from 'node:crypto'
 
 const app = express()
 
@@ -20,11 +20,13 @@ app.use(clerkMiddleware())
 app.get('/workspaces', async (req, res) => {
     const { userId } = getAuth(req)
 
+
     const user = await prisma.user.findFirst({
         where: {
             clerkId: userId,
         },
     })
+
 
     if (!user) {
         return res.status(404).json({ error: 'User not found' })
@@ -85,13 +87,18 @@ app.post('/workspaces', async (req, res) => {
 })
 
 app.post('/dummy-setup', async (req, res) => {
-    const { userId, location = 'Canada', roleName = 'DummyAdmin', permissions = 0 } = req.body
+    const { userId, location = 'Canada', roleName = 'DummyAdmin', permissions = 0, firstName, lastName } = req.body
     try {
         const result = await prisma.$transaction(async (tx) => {
             // Create User
             const user = userId
                 ? await tx.user.findUnique({ where: { id: Number(userId) } })
-                : await tx.user.create({ data: { clerkId: `dummy-${randomUUID()}` } })
+                : await tx.user.create({ 
+                    data: { 
+                        clerkId: `dummy-${randomUUID()}`,
+                        firstName,
+                        lastName,
+                    } })
 
             if (!user) {
                 return { status: 404, error: `User ${userId} not found` }
@@ -100,6 +107,7 @@ app.post('/dummy-setup', async (req, res) => {
             // Create Workspace
             const workspace = await tx.workspace.create({
                 data: {
+                    name: 'Test',
                     adminId: user.id,
                     location,
                 },
@@ -188,14 +196,98 @@ app.post('/dummy-create-shift', async (req, res) => {
 
 app.post('/clerk/webhook', async (req, res) => {
     const evt = await verifyWebhook(req)
-    const { id } = evt.data
+    const {id, first_name, last_name} = evt.data as UserJSON
 
     if (evt.type === 'user.created') {
+        
         await prisma.user.create({
             data: {
+                firstName: first_name,
+                lastName: last_name,
                 clerkId: id,
             },
         })
+    }
+})
+
+/*
+  Will need checks in the future for duplicate shifts.
+  If userId is switched as well need to check for duplicates.
+*/
+app.put('/shift/:id', async (req, res) => {
+    try {
+        const id = Number(req.params.id)
+        if (!Number.isInteger(id)) return res.status(400).json({ error: 'Invlaid Id' })
+
+        const shift = await prisma.shift.findUnique({ where: { id: id } })
+
+        if (!shift) return res.status(404).json({ error: `shift: ${id} was not found` })
+
+        const { startTime, endTime, userId, breakDuration } = req.body as {
+            startTime: string
+            endTime: string
+            userId: number
+            breakDuration: number
+        }
+
+        if (!startTime || !endTime || !userId || !breakDuration) {
+            return res.status(400).json({ error: 'Not all feilds were provided' })
+        }
+
+        // Could do an additional check to see if userId breakDuration or workSpaceId are integers
+
+        const updated = await prisma.shift.update({
+            where: { id: id },
+            data: {
+                startTime,
+                endTime,
+                breakDuration,
+            },
+        })
+
+        return res.status(200).json({ updated })
+    } catch (error) {
+        console.log('Error in index route', error)
+        res.status(500).json({ message: 'Internal server error' })
+    }
+})
+
+/*
+    Needs more saftey checks
+*/
+app.delete('/shift/:id', async (req, res) => {
+    try {
+        const id = Number(req.params.id)
+        if (!Number.isInteger(id)) return res.status(400).json({ error: 'Invalid id' })
+        await prisma.shift.delete({ where: { id: Number(id) } })
+
+        res.status(200).json({ message: 'Shift deleted' })
+    } catch (err) {
+        console.log('Error in index route', err)
+        res.status(500).json({ message: 'Internal server error' })
+    }
+})
+
+app.get('/shifts/:workspaceId', async (req, res) => {
+    try {
+        const workspaceId = Number(req.params.workspaceId)
+        const { start, end } = req.body
+        if (!Number.isInteger(workspaceId))
+            return res.status(400).json({ message: 'Invalid workspaceId' })
+
+        const startDate = new Date(start)
+        const endDate = new Date(end)
+
+        const shifts = await prisma.shift.findMany({
+            where: { workspaceId, startTime: { lt: endDate }, endTime: { gt: startDate } },
+            orderBy: { startTime: 'asc' },
+            include: {user: true}
+        })
+
+        res.status(200).json(shifts)
+    } catch (error) {
+        console.log('Error in index route', error)
+        res.status(500).json({ message: 'Internal server error' })
     }
 })
 

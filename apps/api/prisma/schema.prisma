@@ -10,11 +10,14 @@ datasource db {
 
 model User {
   id                      Int                       @id @default(autoincrement())
+  firstName               String?
+  lastName                String?
   clerkId                 String                    @unique
   createdAt               DateTime                  @default(now())
   updatedAt               DateTime                  @updatedAt
   UserWorkspaceMembership UserWorkspaceMembership[]
   UserRoleMembership      UserRoleMembership[]
+  Shift                   Shift[]
 }
 
 model UserWorkspaceMembership {
@@ -45,6 +48,7 @@ model Shift {
   endBreakTime   DateTime?
   breakDuration  Int
   workspaceId    Int
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Role {
