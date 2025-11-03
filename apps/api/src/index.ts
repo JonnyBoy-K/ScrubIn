@@ -1,13 +1,13 @@
-import 'dotenv/config'
-import express from 'express'
-import cors from 'cors'
-import helmet from 'helmet'
-import morgan from 'morgan'
-import { prisma } from './db'
-import { clerkMiddleware, getAuth, UserJSON } from '@clerk/express'
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import { prisma } from './db';
+import { randomInt, randomUUID } from 'crypto';
+import { clerkMiddleware, getAuth } from '@clerk/express'
 import { verifyWebhook } from '@clerk/express/webhooks'
 import { getWorkspaceMembership } from './utils/authz'
-import { randomUUID } from 'node:crypto'
 
 const app = express()
 
@@ -20,11 +20,13 @@ app.use(clerkMiddleware())
 app.get('/workspaces', async (req, res) => {
     const { userId } = getAuth(req)
 
+
     const user = await prisma.user.findFirst({
         where: {
             clerkId: userId,
         },
     })
+
 
     if (!user) {
         return res.status(404).json({ error: 'User not found' })
