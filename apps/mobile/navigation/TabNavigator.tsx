@@ -11,12 +11,17 @@ const Tab = createBottomTabNavigator();
 
 export default function TabNavigator() {
     return (
-        <Tab.Navigator tabBar={(props) => <TabBar {...props} />} screenOptions={{ headerShown: false }}>
-            <Tab.Screen name="Home" component={HomePage} />
-            <Tab.Screen name="ViewShift" component={ViewShiftPage} />
-            <Tab.Screen name="TradeShift" component={TradeShiftPage} />
-            <Tab.Screen name="DaysOff" component={DaysOffPage} />
-            <Tab.Screen name="Settings" component={SettingsPage} />
+        <Tab.Navigator tabBar={(props) => <TabBar {...props} />}>
+            <Tab.Screen name="Home" component={HomePage} options={{
+                title: 'Home', headerTitleAlign: 'center', headerStyle: { backgroundColor: '#3f37c9', shadowColor: 'transparent', borderBottomWidth: 0 }, headerTintColor: '#fff', headerTitleStyle: { fontWeight: 'bold', fontSize: 30 }}} />
+            <Tab.Screen name="ViewShift" component={ViewShiftPage} options={{
+                title: 'View Shifts', headerTitleAlign: 'center', headerStyle: { backgroundColor: '#3f37c9', shadowColor: 'transparent', borderBottomWidth: 0 }, headerTintColor: '#fff', headerTitleStyle: { fontWeight: 'bold', fontSize: 30 }}} />
+            <Tab.Screen name="TradeShift" component={TradeShiftPage} options={{
+                title: 'Trade Shifts', headerTitleAlign: 'center', headerStyle: { backgroundColor: '#3f37c9', shadowColor: 'transparent', borderBottomWidth: 0 }, headerTintColor: '#fff', headerTitleStyle: { fontWeight: 'bold', fontSize: 30 }}} />
+            <Tab.Screen name="DaysOff" component={DaysOffPage} options={{
+                title: 'Days Off', headerTitleAlign: 'center', headerStyle: { backgroundColor: '#3f37c9', shadowColor: 'transparent', borderBottomWidth: 0 }, headerTintColor: '#fff', headerTitleStyle: { fontWeight: 'bold', fontSize: 30 }}} />
+            <Tab.Screen name="Settings" component={SettingsPage} options={{
+                title: 'Settings', headerTitleAlign: 'center', headerStyle: { backgroundColor: '#3f37c9', shadowColor: 'transparent', borderBottomWidth: 0 }, headerTintColor: '#fff', headerTitleStyle: { fontWeight: 'bold', fontSize: 30 }}} />
         </Tab.Navigator>
     );
 }
