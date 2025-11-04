@@ -4,6 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as SecureStore from 'expo-secure-store';
 import { ClerkProvider, SignedIn, SignedOut, useAuth } from '@clerk/clerk-expo';
+import TabNavigator from '@/navigation/TabNavigator';
 
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
 import '@/global.css';
@@ -47,9 +48,7 @@ export default function App() {
 					</SignedIn>
 
 					<SignedOut>
-						<Stack.Navigator>
-							<Stack.Screen name="Login" component={LoginPage} />
-						</Stack.Navigator>
+						<TabNavigator />
 					</SignedOut>
 
 					<StatusBar style="auto" />
