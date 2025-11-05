@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     flexDirection: 'row',
     marginBottom: 10,
-    height: height * 0.0725, // equal to the shift container on the home page
+    height: height * 0.09, // 0.0725 will make it equal to the top of home page shift container
   },
   shiftTextContainer: {
     paddingLeft: 10,

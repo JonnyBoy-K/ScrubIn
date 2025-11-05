@@ -1,4 +1,4 @@
-import { View, Text, Button, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, Button, StyleSheet, TouchableOpacity, Image, ScrollView } from 'react-native';
 import { Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@clerk/clerk-expo';
@@ -6,6 +6,48 @@ import { IconButton } from 'react-native-paper';
 import { useState, useEffect } from 'react';
 
 const { height } = Dimensions.get('window');
+
+type Shift = {
+  day: string;
+  role: string;
+  tag: string;
+  time: string;
+  location: string;
+};
+
+const dummyShifts = {
+      shifts: [
+        { day: 'Monday', role: 'Vet Tech', tag: 'Morning', time: '8am - 4pm', location: '3315 Fairlight Drive' },
+        { day: 'Wednesday', role: 'Groomer', tag: 'Stay Late', time: '10am - 8pm', location: 'Circle Drive South' },
+      ]
+};
+
+const ShiftCard = ({ shift }: { shift: any }) => (
+  <View style={styles.shiftUpcomingContainer}>
+    <Image style={{height: 40, width: 40, borderRadius: '50%'}} source={require('assets/example-vet.png')}/>
+    <View style={styles.shiftTextContainer}>
+      <View style={styles.shiftRowTextContainer}>
+        <Text style={styles.standardText}>{shift.day}</Text>
+        <View style={styles.shiftButtonLeft}>
+          <Text style={[styles.standardText, {fontSize: 10, fontWeight: 'normal'}]}>{shift.role}</Text>
+        </View>
+        <View style={styles.shiftButtonRight}>
+          <Text style={[styles.standardText, {fontSize: 10, fontWeight: 'normal'}]}>{shift.tag}</Text>
+        </View>
+      </View>
+      <View style={styles.shiftRowTextContainer}>
+        <View style={styles.shiftRowTextContainer}>
+          <Ionicons name="time-outline" size={12} color="#fff" />
+          <Text style={[styles.standardText, {fontWeight: 'normal'}]}>{shift.time}</Text>
+        </View>
+        <View style={styles.shiftRowTextContainer}>
+          <Ionicons name="location-outline" size={12} color="#fff" />
+          <Text style={[styles.standardText, {fontWeight: 'normal'}]}>{shift.location}</Text>
+        </View>
+      </View>
+    </View>
+  </View>
+);
 
 export default function HomePage() {
   const { signOut } = useAuth();
@@ -95,6 +137,11 @@ export default function HomePage() {
       
       <View style={styles.bottomContainer}>
         <Text style={[styles.standardText, {color: 'black'}]}>Upcoming</Text>
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          {dummyShifts.shifts.map((shift, idx) => (
+              <ShiftCard key={idx} shift={shift} />
+            ))}
+        </ScrollView>
       </View>
     </View>
   );
@@ -151,6 +198,16 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     flexDirection: 'row',
   },
+  shiftUpcomingContainer: {
+    backgroundColor: '#ffc802',
+    borderRadius: 10,
+    padding: 10,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    flexDirection: 'row',
+    marginBottom: 10,
+    height: height * 0.09 // 0.0725 will make it equal to the top of home page shift container
+  },
   shiftTextContainer: {
     paddingLeft: 10,
     justifyContent: 'center',
@@ -196,5 +253,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 3,
-  }
+  },
+  scrollContainer: {
+    paddingTop: 10,
+  },
 });
