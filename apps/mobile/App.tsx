@@ -4,13 +4,14 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as SecureStore from 'expo-secure-store';
 import { ClerkProvider, SignedIn, SignedOut, useAuth } from '@clerk/clerk-expo';
-import TabNavigator from '@/navigation/TabNavigator';
 
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
 import '@/global.css';
 
+import EntryPage from './pages/EntryPage';
+import SignInPage from './pages/SignInPage';
+import SignUpPage from './pages/SignUpPage';
 import HomePage from './pages/HomePage';
-import LoginPage from './pages/LoginPage';
 
 const Stack = createNativeStackNavigator();
 
@@ -48,7 +49,11 @@ export default function App() {
 					</SignedIn>
 
 					<SignedOut>
-						<TabNavigator />
+						<Stack.Navigator screenOptions={{headerShown: false}}>
+							<Stack.Screen name="Entry" component={EntryPage} />
+							<Stack.Screen name="SignIn" component={SignInPage} />
+							<Stack.Screen name="SignUp" component={SignUpPage} />
+						</Stack.Navigator>
 					</SignedOut>
 
 					<StatusBar style="auto" />
