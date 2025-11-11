@@ -1,60 +1,109 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-import { useSignUp } from '@clerk/clerk-expo';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { useSignUp, useSSO } from '@clerk/clerk-expo';
+import { ActivityIndicator } from 'react-native-paper';
 
-type RootStackParamList = { SignIn: undefined; SignUp: undefined; };
+// used ai to implement sign up
+
+type RootStackParamList = {
+  Entry: undefined;
+  SignIn: undefined;
+  SignUp: undefined;
+  Home: undefined;
+};
+
 type SignUpPageNavigationProp = StackNavigationProp<RootStackParamList, 'SignUp'>;
-type Props = { navigation: SignUpPageNavigationProp };
+
+type Props = {
+  navigation: SignUpPageNavigationProp;
+};
 
 export default function SignUpPage({ navigation }: Props) {
   const { isLoaded, signUp, setActive } = useSignUp();
-  const [name, setName] = useState('');
+  const { startSSOFlow } = useSSO();
+  const [emailAddress, setEmailAddress] = useState('');
+  const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
   const [username, setUsername] = useState('');
   const [role, setRole] = useState('');
-  const [password, setPassword] = useState('');
   const [pendingVerification, setPendingVerification] = useState(false);
   const [code, setCode] = useState('');
+  const [loading, setLoading] = useState<string | null>(null);
 
   const onSignUpPress = async () => {
     if (!isLoaded) return;
+
     try {
       await signUp.create({
-        emailAddress: username,
+        emailAddress,
         password,
+        firstName,
+        username,
       });
+
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
       setPendingVerification(true);
-    } catch (err) {
-      console.error('Sign-up error:', err);
+    } catch (err: any) {
+      console.error(JSON.stringify(err, null, 2));
+      Alert.alert('Error', err.errors?.[0]?.message || 'Something went wrong');
     }
   };
 
   const onVerifyPress = async () => {
     if (!isLoaded) return;
+
     try {
-      const attempt = await signUp.attemptEmailAddressVerification({ code });
-      if (attempt.status === 'complete') {
-        await setActive({ session: attempt.createdSessionId });
-      } else console.error('Verification incomplete:', attempt);
-    } catch (err) {
-      console.error('Verification error:', err);
+      const signUpAttempt = await signUp.attemptEmailAddressVerification({
+        code,
+      });
+
+      if (signUpAttempt.status === 'complete') {
+        await setActive({ session: signUpAttempt.createdSessionId });
+      } else {
+        console.error(JSON.stringify(signUpAttempt, null, 2));
+        Alert.alert('Error', 'Verification failed. Please try again.');
+      }
+    } catch (err: any) {
+      console.error(JSON.stringify(err, null, 2));
+      Alert.alert('Error', err.errors?.[0]?.message || 'Something went wrong');
     }
   };
+
+  const onSocialSignUp = async (strategy: 'oauth_google') => {
+    if (!isLoaded) return;
+
+    setLoading(strategy);
+    try {
+        const { createdSessionId, setActive } = await startSSOFlow({
+            strategy,
+        });
+
+        if (createdSessionId) {
+            await setActive!({ session: createdSessionId });
+        }
+    } catch (err: any) {
+        console.error(JSON.stringify(err, null, 2));
+        Alert.alert('Error', err.errors?.[0]?.message || `Failed to sign up with ${strategy}`);
+    } finally {
+        setLoading(null);
+    }
+  };
+
+  const availableProviders = [
+    { id: 'oauth_google', name: 'Google' },
+  ];
 
   if (pendingVerification) {
     return (
       <View style={styles.container}>
         <Text style={styles.title}>Verify Your Email</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter verification code"
-          placeholderTextColor="#ccc"
-          value={code}
-          onChangeText={setCode}
-        />
-        <TouchableOpacity style={styles.button} onPress={onVerifyPress}>
-          <Text style={styles.buttonText}>Verify</Text>
+        <Text style={styles.subtitle}>Check your email for the verification code</Text>
+
+        <TextInput style={styles.input} placeholder="Enter verification code" placeholderTextColor="#888" value={code} onChangeText={setCode} autoCapitalize="none"/>
+        
+        <TouchableOpacity style={styles.primaryButton} onPress={onVerifyPress}>
+          <Text style={styles.primaryButtonText}>Verify Email</Text>
         </TouchableOpacity>
       </View>
     );
@@ -63,24 +112,34 @@ export default function SignUpPage({ navigation }: Props) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Sign Up</Text>
-
-      <TextInput style={styles.input} placeholder="Name" placeholderTextColor="#ccc" value={name} onChangeText={setName} />
-      <TextInput style={styles.input} placeholder="Username / Email" placeholderTextColor="#ccc" value={username} onChangeText={setUsername} autoCapitalize="none" />
-      <TextInput style={styles.input} placeholder="Role" placeholderTextColor="#ccc" value={role} onChangeText={setRole} />
-      <TextInput style={styles.input} placeholder="Password" placeholderTextColor="#ccc" secureTextEntry value={password} onChangeText={setPassword} />
-
-      <TouchableOpacity style={styles.button} onPress={onSignUpPress}>
-        <Text style={styles.buttonText}>Register</Text>
+      <TextInput style={styles.input} placeholder="Full Name" placeholderTextColor="#888" value={firstName} onChangeText={setFirstName} autoCapitalize='words' />
+      <TextInput style={styles.input} placeholder="Username" placeholderTextColor="#888" value={username} onChangeText={setUsername} autoCapitalize="none" />
+      <TextInput style={styles.input} placeholder="Role" placeholderTextColor="#888" value={role} onChangeText={setRole} />
+      <TextInput style={styles.input} placeholder="Email" placeholderTextColor="#888" value={emailAddress} onChangeText={setEmailAddress} autoCapitalize="none" keyboardType="email-address" />
+      <TextInput style={styles.input} placeholder="Password" placeholderTextColor="#888" value={password} onChangeText={setPassword} secureTextEntry />
+      
+      <TouchableOpacity style={styles.primaryButton} onPress={onSignUpPress}>
+        <Text style={styles.primaryButtonText}>Register</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.oauthButton}>
-        <Text style={styles.oauthText}>Continue with Google</Text>
-      </TouchableOpacity>
+      <View style={styles.socialContainer}>
+        <Text style={styles.socialText}>Or sign up with</Text>
+        
+        {availableProviders.map((provider) => (
+        <TouchableOpacity style={styles.socialButton} key={provider.id} onPress={() => onSocialSignUp('oauth_google')} disabled={!!loading} >
+          {loading === provider.id ? (
+                <ActivityIndicator color="#fff" />
+            ) : (
+                <Text style={styles.socialButtonText}>{provider.name}</Text>
+            )}
+        </TouchableOpacity>
+        ))}
+      </View>
 
-      <View style={styles.linkRow}>
-        <Text style={styles.text}>Have an account already?</Text>
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>Have an account already? </Text>
         <TouchableOpacity onPress={() => navigation.navigate('SignIn')}>
-          <Text style={styles.link}> Sign In</Text>
+          <Text style={styles.footerLink}>Sign In</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -88,15 +147,75 @@ export default function SignUpPage({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#3f37c9' },
-  title: { color: '#fff', fontSize: 26, fontWeight: 'bold', marginBottom: 20 },
-  input: { width: '80%', backgroundColor: '#4f4fc9', color: '#fff', padding: 10, borderRadius: 8, marginBottom: 10 },
-  button: { backgroundColor: '#f72485', paddingVertical: 12, width: '80%', borderRadius: 8, alignItems: 'center', marginTop: 10 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  oauthButton: { backgroundColor: '#4285F4', paddingVertical: 12, width: '80%', borderRadius: 8, alignItems: 'center', marginTop: 10 },
-  oauthText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  linkRow: { flexDirection: 'row', marginTop: 20 },
-  text: { color: '#fff' },
-  link: { color: '#f72485', fontWeight: 'bold' },
+  container: {
+    flex: 1,
+    padding: 20,
+    justifyContent: 'center',
+    backgroundColor: '#000',
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 30,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#888',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  input: {
+    backgroundColor: '#1C1C1E',
+    color: '#fff',
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 15,
+    fontSize: 16,
+  },
+  primaryButton: {
+    backgroundColor: '#007AFF',
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  primaryButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  socialContainer: {
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  socialText: {
+    color: '#888',
+    marginBottom: 15,
+  },
+  socialButton: {
+    backgroundColor: '#333',
+    padding: 12,
+    borderRadius: 10,
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  socialButtonText: {
+    color: '#fff',
+    fontSize: 16,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  footerText: {
+    color: '#888',
+  },
+  footerLink: {
+    color: '#007AFF',
+    fontWeight: '600',
+  },
 });
 
