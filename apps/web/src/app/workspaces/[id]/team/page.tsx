@@ -1,9 +1,10 @@
 "use client";
 import {
-    UsersRound,
-    Plus,
-    ChevronDown,
-    ChevronUp,
+  UsersRound,
+  Plus,
+  ChevronDown,
+  ChevronUp,
+  Trash2,
 } from "lucide-react";
 import React from "react";
 import {
@@ -18,6 +19,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import AddMemberModal from "../../../../../components/AddMemberModal";
+import { useParams } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
 
 type Member = {
   id: number,
@@ -28,17 +31,45 @@ type Member = {
 }
 
 export default function TeamPage() {
-  // temporary mock data
-  const seedmembers: Member[] = [
-    { id: 1, name: "Admin Annie", role: "Admin", email: "annie@clinic.com", phone: "306-555-1000"},
-    { id: 2, name: "SubAdmin Sam", role: "Sub-Admin", email: "sam@clinic.com", phone: "306-555-2000"},
-    { id: 3, name: "Regular Reggie", role: "Employee", email: "reggie@clinic.com", phone: "306-555-3000"},
-  ];
-
-  const [members, setMembers] = React.useState<Member[]>(seedmembers);
+  const { id: workspaceId } = useParams<{ id: string }>();
+  const { getToken } = useAuth();
+  const API = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000";
+  const [members, setMembers] = React.useState<Member[]>([]);
 
   // Tracks if that member has a toggled (expanded) row, showing email, phone and remove
   const [expanded, setExpanded] = React.useState<Record<number, boolean>>({});
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    let alive = true;
+    (async () => {
+       try {
+        setLoading(true);
+         const token = await getToken();
+         const res = await fetch(`${API}/workspaces/${workspaceId}/members`, {
+           headers: { Authorization: `Bearer ${token ?? ""}` },
+           cache: "no-store",
+         });
+         if (!res.ok) throw new Error(`HTTP ${res.status}`);
+         const data = await res.json();
+         // Map API → your Member type
+         const mapped: Member[] = (data.members ?? []).map((m: any) => ({
+           id: Number(m.id),
+           name: `${m.firstName ?? ""} ${m.lastName ?? ""}`.trim() || "Unnamed",
+           role: m.role ?? "Member",
+           email: m.email ?? "",
+           phone: m.phone ?? "",
+         }));
+         if (alive) setMembers(mapped);
+       } catch (e: any) {
+         if (alive) setError(e.message ?? "Failed to load team");
+       } finally {
+         if (alive) setLoading(false);
+       }
+     })();
+     return () => { alive = false; };
+  }, [API, workspaceId, getToken]);
 
   //Toggle function to switch the setExpanded for true to false and vice versa
   function toggle(id: number){
@@ -62,12 +93,24 @@ export default function TeamPage() {
   }
 
   function confirmRemove() {
-    const id = confirmState.member?.id
+    const id = confirmState.member?.id;
     if (id == null) return;
-
-    setMembers(prev => prev.filter(m => m.id !== id));
-    closeConfirm();
-    } 
+    (async () => {
+      try {
+        const token = await getToken();
+        const res = await fetch(`${API}/workspaces/${workspaceId}/members/${id}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token ?? ""}` },
+        });
+        if (res.status !== 204 && !res.ok) throw new Error(`HTTP ${res.status}`);
+        setMembers(prev => prev.filter(m => m.id !== id));
+      } catch {
+        // optional: surface an error
+      } finally {
+        closeConfirm();
+      }
+    })();
+  }
 
   const [addOpen, setAddOpen] = React.useState(false);
 
@@ -87,6 +130,13 @@ export default function TeamPage() {
           </button>
         </div>
       </header>
+
+      {loading && (
+         <div className="p-4 text-gray-500">Loading team…</div>
+       )}
+       {error && !loading && (
+         <div className="p-4 text-red-600">Error: {error}</div>
+       )}
 
       <div className="overflow-x-auto rounded-2xl border border-gray-400 text-gray-500">
         <table className="min-w-full text-left">
