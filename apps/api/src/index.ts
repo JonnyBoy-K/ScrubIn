@@ -7,6 +7,7 @@ import { prisma } from './db'
 import { clerkClient, clerkMiddleware, getAuth } from '@clerk/express'
 import { verifyWebhook } from '@clerk/express/webhooks'
 import { getWorkspaceMembership } from './utils/authz'
+import workspaceRoutes from "./routes/workspaces";
 
 const app = express()
 
@@ -15,6 +16,7 @@ app.use(cors({ origin: '*' }))
 app.use(express.json())
 app.use(morgan('dev'))
 app.use(clerkMiddleware())
+app.use(workspaceRoutes)
 
 app.get('/workspaces', async (req, res) => {
     const { userId } = getAuth(req)
