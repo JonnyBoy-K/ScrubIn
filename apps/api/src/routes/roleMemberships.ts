@@ -1,35 +1,29 @@
 import express from 'express';
 import { prisma } from '../db';
 
-const router = express.Router();
+const router = express.Router({ mergeParams: true });
 
-// GET /users
+// GET /workspaces/:workspaceId/role-memberships
 router.get('/', async (req, res) => {
-	// TODO: Implement get users
+	// TODO: Implement get role memberships by workspace
 	res.status(501).json({ error: 'Not implemented' });
 });
 
-// GET /users/:id
+// GET /workspaces/:workspaceId/role-memberships/:id
 router.get('/:id', async (req, res) => {
-	// TODO: Implement get user
+	// TODO: Implement get role membership
 	res.status(501).json({ error: 'Not implemented' });
 });
 
-// POST /users
+// POST /workspaces/:workspaceId/role-memberships
 router.post('/', async (req, res) => {
-	// TODO: Implement create user
+	// TODO: Implement create role membership
 	res.status(501).json({ error: 'Not implemented' });
 });
 
-// PATCH /users/:id
-router.patch('/:id', async (req, res) => {
-	// TODO: Implement update user
-	res.status(501).json({ error: 'Not implemented' });
-});
-
-// DELETE /users/:id
+// DELETE /workspaces/:workspaceId/role-memberships/:id
 router.delete('/:id', async (req, res) => {
-	// TODO: Implement delete user
+	// TODO: Implement delete role membership
 	res.status(501).json({ error: 'Not implemented' });
 });
 
