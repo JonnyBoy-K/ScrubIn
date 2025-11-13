@@ -10,6 +10,7 @@
 		"build": "turbo run build",
 		"build:web": "pnpm -F web build",
 		"build:api": "pnpm -F api build",
+		"postinstall": "pnpm -F api-client build",
 		"build:api-client": "pnpm -F api-client build",
     	"db": "pnpm -F api db"
 	},
