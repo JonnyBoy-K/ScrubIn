@@ -50,7 +50,7 @@ export function createApiClient({ baseUrl, getToken }) {
 
 	return {
 		// Shifts
-		getWorkspaceShifts: (workspaceId, params) =>
+		getWorkspaceShifts: (workspaceId, params?) =>
 			request({ method: 'GET', path: `/workspaces/${workspaceId}/shifts`, params }),
 		getShift: (workspaceId, id) =>
 			request({ method: 'GET', path: `/workspaces/${workspaceId}/shifts/${id}` }),
@@ -60,7 +60,7 @@ export function createApiClient({ baseUrl, getToken }) {
 			request({ method: 'PATCH', path: `/workspaces/${workspaceId}/shifts/${id}`, body: data }),
 		deleteShift: (workspaceId, id) =>
 			request({ method: 'DELETE', path: `/workspaces/${workspaceId}/shifts/${id}` }),
-		getUserShifts: (workspaceId, userId, params) =>
+		getUserShifts: (workspaceId, userId, params?) =>
 			request({
 				method: 'GET',
 				path: `/workspaces/${workspaceId}/users/${userId}/shifts`,
@@ -92,7 +92,7 @@ export function createApiClient({ baseUrl, getToken }) {
 			}),
 
 		// Invitations
-		getInvitationsByWorkspace: (workspaceId, params) =>
+		getInvitationsByWorkspace: (workspaceId, params?) =>
 			request({ method: 'GET', path: `/workspaces/${workspaceId}/invitations`, params }),
 		getInvitation: (workspaceId, id) =>
 			request({ method: 'GET', path: `/workspaces/${workspaceId}/invitations/${id}` }),
@@ -108,14 +108,14 @@ export function createApiClient({ baseUrl, getToken }) {
 			}),
 
 		// Users, global
-		getUsers: (params) => request({ method: 'GET', path: '/users', params }),
+		getUsers: (params?) => request({ method: 'GET', path: '/users', params }),
 		getUser: (id) => request({ method: 'GET', path: `/users/${id}` }),
 		createUser: (data) => request({ method: 'POST', path: '/users', body: data }),
 		updateUser: (id, data) => request({ method: 'PATCH', path: `/users/${id}`, body: data }),
 		deleteUser: (id) => request({ method: 'DELETE', path: `/users/${id}` }),
 
 		// Workspaces, global
-		getWorkspaces: (params) => request({ method: 'GET', path: '/workspaces', params }),
+		getWorkspaces: (params?) => request({ method: 'GET', path: '/workspaces', params }),
 		getWorkspace: (id) => request({ method: 'GET', path: `/workspaces/${id}` }),
 		createWorkspace: (data) => request({ method: 'POST', path: '/workspaces', body: data }),
 		updateWorkspace: (id, data) =>
@@ -123,7 +123,7 @@ export function createApiClient({ baseUrl, getToken }) {
 		deleteWorkspace: (id) => request({ method: 'DELETE', path: `/workspaces/${id}` }),
 
 		// Workspace members
-		getWorkspaceMembers: (workspaceId, params) =>
+		getWorkspaceMembers: (workspaceId, params?) =>
 			request({ method: 'GET', path: `/workspaces/${workspaceId}/users`, params }),
 		addMemberToWorkspace: (workspaceId, userId) =>
 			request({ method: 'POST', path: `/workspaces/${workspaceId}/users`, body: { userId } }),
@@ -131,7 +131,7 @@ export function createApiClient({ baseUrl, getToken }) {
 			request({ method: 'DELETE', path: `/workspaces/${workspaceId}/users/${userId}` }),
 
 		// Workspace memberships
-		getMembershipsByWorkspace: (workspaceId, params) =>
+		getMembershipsByWorkspace: (workspaceId, params?) =>
 			request({ method: 'GET', path: `/workspaces/${workspaceId}/memberships`, params }),
 		getMembership: (workspaceId, id) =>
 			request({ method: 'GET', path: `/workspaces/${workspaceId}/memberships/${id}` }),
@@ -139,7 +139,7 @@ export function createApiClient({ baseUrl, getToken }) {
 			request({ method: 'POST', path: `/workspaces/${workspaceId}/memberships`, body: data }),
 		deleteMembership: (workspaceId, id) =>
 			request({ method: 'DELETE', path: `/workspaces/${workspaceId}/memberships/${id}` }),
-		getMembershipsByUser: (workspaceId, userId, params) =>
+		getMembershipsByUser: (workspaceId, userId, params?) =>
 			request({
 				method: 'GET',
 				path: `/workspaces/${workspaceId}/users/${userId}/memberships`,
@@ -147,7 +147,7 @@ export function createApiClient({ baseUrl, getToken }) {
 			}),
 
 		// Roles
-		getRoles: (workspaceId, params) =>
+		getRoles: (workspaceId, params?) =>
 			request({ method: 'GET', path: `/workspaces/${workspaceId}/roles`, params }),
 		getRole: (workspaceId, id) =>
 			request({ method: 'GET', path: `/workspaces/${workspaceId}/roles/${id}` }),
@@ -157,9 +157,9 @@ export function createApiClient({ baseUrl, getToken }) {
 			request({ method: 'PATCH', path: `/workspaces/${workspaceId}/roles/${id}`, body: data }),
 		deleteRole: (workspaceId, id) =>
 			request({ method: 'DELETE', path: `/workspaces/${workspaceId}/roles/${id}` }),
-		getRolesByWorkspace: (workspaceId, params) =>
+		getRolesByWorkspace: (workspaceId, params?) =>
 			request({ method: 'GET', path: `/workspaces/${workspaceId}/roles`, params }),
-		getRoleMembers: (workspaceId, roleId, params) =>
+		getRoleMembers: (workspaceId, roleId, params?) =>
 			request({
 				method: 'GET',
 				path: `/workspaces/${workspaceId}/roles/${roleId}/members`,
@@ -177,7 +177,7 @@ export function createApiClient({ baseUrl, getToken }) {
 			}),
 
 		// Role memberships
-		getRoleMembershipsByWorkspace: (workspaceId, params) =>
+		getRoleMembershipsByWorkspace: (workspaceId, params?) =>
 			request({ method: 'GET', path: `/workspaces/${workspaceId}/role-memberships`, params }),
 		getRoleMembership: (workspaceId, id) =>
 			request({ method: 'GET', path: `/workspaces/${workspaceId}/role-memberships/${id}` }),
@@ -189,7 +189,7 @@ export function createApiClient({ baseUrl, getToken }) {
 			}),
 		deleteRoleMembership: (workspaceId, id) =>
 			request({ method: 'DELETE', path: `/workspaces/${workspaceId}/role-memberships/${id}` }),
-		getRoleMembershipsByUser: (workspaceId, userId, params) =>
+		getRoleMembershipsByUser: (workspaceId, userId, params?) =>
 			request({
 				method: 'GET',
 				path: `/workspaces/${workspaceId}/users/${userId}/role-memberships`,
@@ -201,7 +201,7 @@ export function createApiClient({ baseUrl, getToken }) {
 		getPermission: (bitkey) => request({ method: 'GET', path: `/permissions/${bitkey}` }),
 
 		// Shift requests
-		getShiftRequestsByWorkspace: (workspaceId, params) =>
+		getShiftRequestsByWorkspace: (workspaceId, params?) =>
 			request({ method: 'GET', path: `/workspaces/${workspaceId}/shift-requests`, params }),
 		getShiftRequest: (workspaceId, id) =>
 			request({ method: 'GET', path: `/workspaces/${workspaceId}/shift-requests/${id}` }),
@@ -215,7 +215,7 @@ export function createApiClient({ baseUrl, getToken }) {
 			}),
 		deleteShiftRequest: (workspaceId, id) =>
 			request({ method: 'DELETE', path: `/workspaces/${workspaceId}/shift-requests/${id}` }),
-		getShiftRequestsByUser: (workspaceId, userId, params) =>
+		getShiftRequestsByUser: (workspaceId, userId, params?) =>
 			request({
 				method: 'GET',
 				path: `/workspaces/${workspaceId}/users/${userId}/shift-requests`,
@@ -235,7 +235,7 @@ export function createApiClient({ baseUrl, getToken }) {
 			}),
 
 		// Meetings
-		getMeetingsByWorkspace: (workspaceId, params) =>
+		getMeetingsByWorkspace: (workspaceId, params?) =>
 			request({ method: 'GET', path: `/workspaces/${workspaceId}/meetings`, params }),
 		getMeeting: (workspaceId, id) =>
 			request({ method: 'GET', path: `/workspaces/${workspaceId}/meetings/${id}` }),
