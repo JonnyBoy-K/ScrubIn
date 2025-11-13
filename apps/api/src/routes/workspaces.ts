@@ -5,7 +5,6 @@ import { getWorkspaceMembership } from '../utils/authz';
 
 const router = express.Router();
 
-// GET /workspaces
 router.get('/', async (req, res) => {
 	const { userId } = getAuth(req);
 
@@ -28,7 +27,6 @@ router.get('/', async (req, res) => {
 	res.status(200).json(workspaces);
 });
 
-// GET /workspaces/:id
 router.get('/:id', async (req, res) => {
 	try {
 		const { userId } = getAuth(req);
@@ -45,7 +43,6 @@ router.get('/:id', async (req, res) => {
 	}
 });
 
-// POST /workspaces
 router.post('/', async (req, res) => {
 	const { userId } = getAuth(req);
 
@@ -73,13 +70,11 @@ router.post('/', async (req, res) => {
 	res.status(200).json(workspace);
 });
 
-// PATCH /workspaces/:id
 router.patch('/:id', async (req, res) => {
 	// TODO: Implement workspace update
 	res.status(501).json({ error: 'Not implemented' });
 });
 
-// DELETE /workspaces/:id
 router.delete('/:id', async (req, res) => {
 	// TODO: Implement workspace delete
 	res.status(501).json({ error: 'Not implemented' });

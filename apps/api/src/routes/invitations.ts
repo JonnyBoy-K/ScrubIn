@@ -5,7 +5,6 @@ import { prisma } from '../db';
 
 const router = express.Router();
 
-// GET /invitations?workspaceId=:workspaceId (optional filter)
 router.get('/', async (req, res) => {
 	const { workspaceId } = req.query;
 	
@@ -23,7 +22,6 @@ router.get('/', async (req, res) => {
 	}
 });
 
-// GET /invitations/:id
 router.get('/:id', async (req, res) => {
 	const { isAuthenticated, userId: clerkId } = getAuth(req);
 
@@ -71,7 +69,6 @@ router.get('/:id', async (req, res) => {
 	});
 });
 
-// POST /invitations
 router.post('/', async (req, res) => {
 	const { userId } = getAuth(req);
 	const { workspaceId } = req.body;
@@ -113,13 +110,11 @@ router.post('/', async (req, res) => {
 	}
 });
 
-// DELETE /invitations/:id
 router.delete('/:id', async (req, res) => {
 	// TODO: Implement delete invitation
 	res.status(501).json({ error: 'Not implemented' });
 });
 
-// POST /invitations/:id/accept
 router.post('/:id/accept', async (req, res) => {
 	const { id: invitationId } = req.params;
 	const { userId } = getAuth(req);

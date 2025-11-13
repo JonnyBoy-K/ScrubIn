@@ -3,31 +3,26 @@ import { prisma } from '../db';
 
 const router = express.Router();
 
-// GET /users
 router.get('/', async (req, res) => {
 	// TODO: Implement get users
 	res.status(501).json({ error: 'Not implemented' });
 });
 
-// GET /users/:id
 router.get('/:id', async (req, res) => {
 	// TODO: Implement get user
 	res.status(501).json({ error: 'Not implemented' });
 });
 
-// POST /users
 router.post('/', async (req, res) => {
 	// TODO: Implement create user
 	res.status(501).json({ error: 'Not implemented' });
 });
 
-// PATCH /users/:id
 router.patch('/:id', async (req, res) => {
 	// TODO: Implement update user
 	res.status(501).json({ error: 'Not implemented' });
 });
 
-// DELETE /users/:id
 router.delete('/:id', async (req, res) => {
 	// TODO: Implement delete user
 	res.status(501).json({ error: 'Not implemented' });

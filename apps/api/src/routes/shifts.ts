@@ -3,7 +3,6 @@ import { prisma } from '../db';
 
 const router = express.Router({ mergeParams: true });
 
-// GET /workspaces/:workspaceId/shifts
 router.get('/', async (req, res) => {
 	try {
 		const workspaceId = Number(req.params.workspaceId);
@@ -35,19 +34,16 @@ router.get('/', async (req, res) => {
 	}
 });
 
-// GET /workspaces/:workspaceId/shifts/:id
 router.get('/:id', async (req, res) => {
 	// TODO: Implement get single shift
 	res.status(501).json({ error: 'Not implemented' });
 });
 
-// POST /workspaces/:workspaceId/shifts
 router.post('/', async (req, res) => {
 	// TODO: Implement create shift
 	res.status(501).json({ error: 'Not implemented' });
 });
 
-// PATCH /workspaces/:workspaceId/shifts/:id
 router.patch('/:id', async (req, res) => {
 	try {
 		const id = Number(req.params.id);
@@ -82,7 +78,6 @@ router.patch('/:id', async (req, res) => {
 	}
 });
 
-// DELETE /workspaces/:workspaceId/shifts/:id
 router.delete('/:id', async (req, res) => {
 	try {
 		const id = Number(req.params.id);
@@ -96,25 +91,21 @@ router.delete('/:id', async (req, res) => {
 	}
 });
 
-// POST /workspaces/:workspaceId/shifts/:id/clock-in
 router.post('/:id/clock-in', async (req, res) => {
 	// TODO: Implement clock in
 	res.status(501).json({ error: 'Not implemented' });
 });
 
-// POST /workspaces/:workspaceId/shifts/:id/clock-out
 router.post('/:id/clock-out', async (req, res) => {
 	// TODO: Implement clock out
 	res.status(501).json({ error: 'Not implemented' });
 });
 
-// POST /workspaces/:workspaceId/shifts/:id/break/start
 router.post('/:id/break/start', async (req, res) => {
 	// TODO: Implement start break
 	res.status(501).json({ error: 'Not implemented' });
 });
 
-// POST /workspaces/:workspaceId/shifts/:id/break/end
 router.post('/:id/break/end', async (req, res) => {
 	// TODO: Implement end break
 	res.status(501).json({ error: 'Not implemented' });
