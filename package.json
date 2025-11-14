@@ -27,5 +27,8 @@
 		"prettier-plugin-prisma": "^5.0.0",
 		"prettier-plugin-tailwindcss": "^0.7.1",
 		"turbo": "^2.5.8"
+	},
+	"dependencies": {
+		"framer-motion": "^12.23.24"
 	}
 }
