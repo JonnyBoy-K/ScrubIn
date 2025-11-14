@@ -8,7 +8,7 @@ import React from "react";
 export default function RequestsTabBar() {
   const { id } = useParams<{ id: string }>();
   const pathname = usePathname();
-  const base = `/workspace/${id}/requests`;
+  const base = `/workspaces/${id}/requests`;
 
   const tabs = [
     { key: "shift", label: "Shift Requests", href: `${base}/shift` },

@@ -17,7 +17,7 @@ import {
   X,
 } from "lucide-react";
 
-/* ==================== Types ==================== */
+/**** Types ****/
 
 type RequestStatus = "pending" | "approved" | "denied";
 
@@ -43,7 +43,7 @@ type TradeRequest = RequestBase & {
 
 type AnyRequest = TimeOffRequest | TradeRequest;
 
-/* ==================== Mock data ==================== */
+/**** Mock data ****/
 
 const MOCK: AnyRequest[] = [
   {
@@ -82,7 +82,7 @@ const MOCK: AnyRequest[] = [
   },
 ];
 
-/* ==================== Component ==================== */
+/**** Component ****/
 
 export default function ShiftRequestsPage() {
   const [requests, setRequests] = React.useState<AnyRequest[]>(
