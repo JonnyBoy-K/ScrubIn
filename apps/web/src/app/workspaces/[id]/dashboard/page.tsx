@@ -7,40 +7,40 @@ import { Spin, Button, DatePicker } from "antd";
 import { 
   getToday, 
   makeWeek, 
-  moveWeek, 
-  weekLabel } from '../../../../../helpers/time'; 
+  moveWeek, } from '../../../../../helpers/time'; 
 import {
-  Calendar,
-  LayoutDashboard,
   UsersRound,
-  UserRoundCog,
-  Send,
-  Bell,
-  Bolt,
   ChevronLeft,
   ChevronRight,
   Plus,
-  Clock,
+  Coffee
 } from "lucide-react";
 
 import {
-  addWeeks, 
-  startOfWeek,
-  endOfWeek,
-  eachDayOfInterval,
-  format
+  format,
+  parseISO,
 } from "date-fns"; 
 
 
+type ApiShift = { id: number; startTime: string; endTime: string; breakDuration: number | null };
+type ApiUser  = { id: number; firstName: string | null; lastName: string | null };
+type WeeklyResponse = {
+  days: string[];                             
+  users: ApiUser[];                          
+  buckets: Record<number, Record<string, ApiShift[]>>;
+};
 
 
 const page = ({ params }: { params: Promise<{ id: string }> }) => {
   const { id } = use(params);
   const [anchor, setAnchor] = useState<Date>(getToday());
   const [isModal, setIsModal] = useState<any>(false);
-  const [option, setOption] = useState<any | undefined>(undefined); 
+  const [shifts, setShifts] = useState<WeeklyResponse>({
+  days: [],
+  users: [],
+  buckets: {},
+  });
   const week = useMemo(() => makeWeek(anchor), [anchor]);
-  const currentWeek = weekLabel(week);
   const [users, setUsers] = useState<[] | null>(); 
   const nextWeek = () => setAnchor(w => moveWeek(w,1).anchor); // Moves 1 week forwards
   const prevWeek = () => setAnchor(w => moveWeek(w,-1).anchor); // Moves 1 week backwards
@@ -48,6 +48,7 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
   const getUsers = async() => {
   try {
     const response = await fetch(`http://localhost:4000/get-users/${id}`, {
+      method: "GET",
       headers: {
         "Content-Type": "Application/JSON"
       }
@@ -66,14 +67,25 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
 
   const getShifts = async() => {
     try {
-    
+      const params = new URLSearchParams({
+        start: week.start.toISOString(),
+        end: week.end.toISOString()
+      });
+      const response = await fetch(`http://localhost:4000/shifts/${id}/weekly?${params}`);
+
+      if (!response.ok) throw new Error("Could not get shifts");
+      const data: WeeklyResponse = await response.json();
+      setShifts(data);  
+
     } catch (error) {
-      
+      console.log(error); 
     }
-  }
+  };
+
  useEffect( () => {
-  getUsers();   
- }, []); 
+  getUsers();
+  getShifts();    
+ }, [id, week.start, week.end]); 
   
   // Could be moved into the helper folder
   // Used to make it so when using datePicker the value
@@ -131,16 +143,49 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
               <div className="space-y-1">
                   {users?.map(user => (
                     <div key={user.id} className="grid grid-cols-8 gap-2 border border-border rounded-lg bg-card hover:bg-card/80 transition-colors">
+                      {/* Emplyee Profile Card for row */}
                       <div className="flex items-center gap-3 p-4 border-r border-border"> 
                         <UsersRound />
                         <div className="text-sm font-medium text-foreground truncate">{user.firstName}</div>
                       </div>
+                      {shifts.days.map(dayKey => {
+                        const items = shifts?.buckets[user.id]?.[dayKey] ?? [];
+                        return(
+                          <div key={dayKey} className="p-2 min-h-[100px] flex flex-col gap-1">
+                              {items.length === 0 ? (
+                                <Button type="default" className="flex-1">
+                                  <Plus />
+                                </Button>
+                              ): (
+                                items.map(shift => (
+                                  <Button
+                                    key={shift.id}
+                                    type="primary"
+                                    className="flex-1 w-full justify-start"
+                                  >
+                                    <div className="flex flex-col flex-1 text-left gap-1">
+                                      <span className="text-sm font-medium">Manager</span>
+                                      <span className="text-xs">
+                                        {format(parseISO(shift.startTime), "HH:mm")} to{" "}
+                                        {format(parseISO(shift.endTime), "HH:mm")}
+                                      </span>
+                                      <div className="flex flex-row gap-1 items-center">
+                                        <Coffee size={12}/>
+                                        <span className="text-xs">{shift.breakDuration}min</span>
+                                      </div>
+                                    </div>
+                                  </Button>
+                                ))
+                              )}
+                          </div>
+                        )
+                      })}
                     </div>
                   ))}
               </div>
             </div>
         </div>
-        <AddShiftModal open={isModal} setOpen={setIsModal} users={users}/>
+        <AddShiftModal open={isModal} setOpen={setIsModal} users={users} workspaceId={Number(id)}/>
       </div>
   );
 };

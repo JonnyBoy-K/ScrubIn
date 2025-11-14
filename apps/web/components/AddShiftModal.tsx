@@ -15,10 +15,11 @@ import { json } from "stream/consumers";
 type AddShiftModalProps = {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  users: any; 
+  users: any;
+  workspaceId: Number; 
 };
 
-const AddShiftModal: React.FC<AddShiftModalProps> = ({ open, setOpen, users }) => {
+const AddShiftModal: React.FC<AddShiftModalProps> = ({ open, setOpen, users, workspaceId }) => {
   const [employee, setEmployee] = useState<any | undefined>(undefined);
   const [dates, setDates] = useState<Dayjs[] | null>(null);
   const [timeRange, setTimeRange] = useState<[Dayjs, Dayjs] | null>(null);
@@ -40,7 +41,7 @@ const AddShiftModal: React.FC<AddShiftModalProps> = ({ open, setOpen, users }) =
 
     const payload = {
       employee,
-      workspaceId: 2,
+      workspaceId,
       breakDuration: 30,
       shifts,
     };

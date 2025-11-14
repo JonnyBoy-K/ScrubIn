@@ -219,8 +219,6 @@ app.put('/shift/:id', async (req, res) => {
     }
 })
 
-
-
 app.post('/dummy-create-shift', async (req, res) => {
     try {
         const { workspaceId, employee /* should be userId */, shifts, breakDuration } = req.body
@@ -239,7 +237,7 @@ app.post('/dummy-create-shift', async (req, res) => {
 
                 return {
                     userId: employee,
-                    workspaceId: Number(workspaceId),
+                    workspaceId: 3,
                     breakDuration: Number(breakDuration) || 30,
                     startTime: start,
                     endTime: end,
@@ -293,20 +291,47 @@ app.get('/get-users/:workspaceId', async (req, res) => {
             },
         })
 
-        if (!users) return res.status(404).json({ error: 'No users found' }); 
-        return res.status(200).json({users}); 
-
+        if (!users) return res.status(404).json({ error: 'No users found' })
+        return res.status(200).json({ users })
 
         return users
     } catch (error) {}
 })
 
-app.get('/shifts/:workspaceId', async (req, res) => {
+// app.get('/shifts/:workspaceId', async (req, res) => {
+//     try {
+//         const workspaceId = Number(req.params.workspaceId)
+//         const { start, end } = req.query
+//         if (!Number.isInteger(workspaceId))
+//             return res.status(400).json({ message: 'Invalid workspaceId' })
+//         if (typeof start !== 'string' || typeof end !== 'string') {
+//             return res.status(400).json({ message: 'Missing start/end query params' })
+//         }
+//         const startDate = new Date(start)
+//         const endDate = new Date(end)
+//         if (typeof start !== 'string' || typeof end !== 'string') {
+//             return res.status(400).json({ message: 'Missing start/end query params' })
+//         }
+//         const shifts = await prisma.shift.findMany({
+//             where: { workspaceId, startTime: { lt: endDate }, endTime: { gt: startDate } },
+//             orderBy: { startTime: 'asc' },
+//             include: { user: true },
+//         })
+
+//         res.status(200).json(shifts)
+//     } catch (error) {
+//         console.log('Error in index route', error)
+//         res.status(500).json({ message: 'Internal server error' })
+//     }
+// })
+
+app.get('/shifts/:workspaceId/weekly', async (req, res) => {
     try {
         const workspaceId = Number(req.params.workspaceId)
-        const { start, end } = req.body
+        const { start, end } = req.query as { start?: string; end?: string }
         if (!Number.isInteger(workspaceId))
             return res.status(400).json({ message: 'Invalid workspaceId' })
+        if (!start || !end) return res.status(400).json({ message: 'Missing start or end' })
 
         const startDate = new Date(start)
         const endDate = new Date(end)
@@ -314,12 +339,54 @@ app.get('/shifts/:workspaceId', async (req, res) => {
         const shifts = await prisma.shift.findMany({
             where: { workspaceId, startTime: { lt: endDate }, endTime: { gt: startDate } },
             orderBy: { startTime: 'asc' },
-            include: { user: true },
+            include: { user: { select: { id: true, firstName: true, lastName: true } } },
         })
 
-        res.status(200).json(shifts)
-    } catch (error) {
-        console.log('Error in index route', error)
+
+
+        // build day list, assume start and end are midnight boundaries in workspace tz already
+        const days: string[] = []
+        for (
+            let d = new Date(startDate);
+            d < endDate;
+            d = new Date(d.getTime() + 24 * 3600 * 1000)
+        ) {
+            days.push(d.toISOString().slice(0, 10)) // yyyy-mm-dd
+        }
+
+        // bucket: { [userId]: { [yyyy-mm-dd]: Shift[] } }
+        const buckets: Record<number, Record<string, any[]>> = {}
+        const users: Record<
+            number,
+            { id: number; firstName: string | null; lastName: string | null }
+        > = {}
+
+        for (const s of shifts) {
+            users[s.user.id] = users[s.user.id] ?? s.user
+            const sStart = s.startTime.getTime()
+            const sEnd = s.endTime.getTime()
+
+            for (const day of days) {
+                const dayStart = new Date(day + 'T00:00:00.000Z').getTime()
+                const dayEnd = dayStart + 24 * 3600 * 1000
+                if (sStart < dayEnd && sEnd > dayStart) {
+                    buckets[s.userId] ??= {}
+                    buckets[s.userId][day] ??= []
+                    // trim payload to what UI needs
+                    buckets[s.userId][day].push({
+                        id: s.id,
+                        startTime: s.startTime,
+                        endTime: s.endTime,
+                        breakDuration: s.breakDuration,
+                    })
+                }
+            }
+        }
+
+        // response shaped for cheap rendering
+        res.json({ days, users: Object.values(users), buckets })
+    } catch (e) {
+        console.error(e)
         res.status(500).json({ message: 'Internal server error' })
     }
 })
