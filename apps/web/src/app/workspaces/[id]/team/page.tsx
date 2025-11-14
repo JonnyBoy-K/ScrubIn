@@ -47,7 +47,7 @@ export default function TeamPage() {
        try {
         setLoading(true);
          const token = await getToken();
-         const res = await fetch(`${API}/workspaces/${workspaceId}/members`, {
+         const res = await fetch(`${API}/workspaces/${workspaceId}/users`, {
            headers: { Authorization: `Bearer ${token ?? ""}` },
            cache: "no-store",
          });
@@ -98,7 +98,7 @@ export default function TeamPage() {
     (async () => {
       try {
         const token = await getToken();
-        const res = await fetch(`${API}/workspaces/${workspaceId}/members/${id}`, {
+        const res = await fetch(`${API}/workspaces/${workspaceId}/users/${id}`, {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token ?? ""}` },
         });
