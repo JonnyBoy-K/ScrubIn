@@ -4,7 +4,6 @@ import {
   Plus,
   ChevronDown,
   ChevronUp,
-  Trash2,
 } from "lucide-react";
 import React from "react";
 import {
@@ -212,7 +211,7 @@ export default function TeamPage() {
                                 className="inline-flex items-center rounded-lg px-3 py-2 bg-red-600 hover:bg-red-700"
                               >
                                 <div className="text-white">
-                                <Trash2 size={16} /> Remove
+                                Remove
                                 </div>
                               </button>
                             </AlertDialogTrigger>

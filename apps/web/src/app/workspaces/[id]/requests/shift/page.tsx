@@ -16,6 +16,10 @@ import {
   Check,
   X,
 } from "lucide-react";
+import { useAuth } from "@clerk/nextjs";
+import { useParams } from "next/navigation";
+
+const API = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000";
 
 /**** Types ****/
 
@@ -43,84 +47,117 @@ type TradeRequest = RequestBase & {
 
 type AnyRequest = TimeOffRequest | TradeRequest;
 
-/**** Mock data ****/
-
-const MOCK: AnyRequest[] = [
-  {
-    id: "r1",
-    kind: "timeoff",
-    requesterNames: ["Alice Carter"],
-    createdAt: "2025-11-10T09:00:00Z",
-    status: "pending",
-    dateRange: { start: "2025-12-05", end: "2025-12-07" },
-    reason: "Family trip",
-  },
-  {
-    id: "r2",
-    kind: "trade",
-    createdAt: "2025-11-10T12:30:00Z",
-    status: "pending",
-    from: { name: "Bob Ito", date: "2025-12-03", start: "09:00", end: "17:00" },
-    to:   { name: "Jonny Bravo", date: "2025-12-04", start: "10:00", end: "18:00" },
-  },
-  {
-    id: "r3",
-    kind: "timeoff",
-    requesterNames: ["David Suzuki"],
-    createdAt: "2025-11-09T18:15:00Z",
-    status: "pending",
-    dateRange: { start: "2025-12-10", end: "2025-12-10" },
-    reason: "Appointment",
-  },
-  {
-    id: "r4",
-    kind: "trade",
-    createdAt: "2025-11-08T15:00:00Z",
-    status: "pending",
-    from: { name: "Adam Eve", date: "2025-12-01", start: "07:00", end: "15:00" },
-    to:   { name: "Reggie Watts", date: "2025-12-02", start: "08:00", end: "16:00" },
-  },
-];
-
 /**** Component ****/
 
 export default function ShiftRequestsPage() {
-  const [requests, setRequests] = React.useState<AnyRequest[]>(
-    () => MOCK.filter((r) => r.status === "pending")
-  );
-  const [selectedId, setSelectedId] = React.useState<string>(MOCK[0]?.id ?? "");
+  // Data + selection
+  const [requests, setRequests] = React.useState<AnyRequest[]>([]);
+  const [selectedId, setSelectedId] = React.useState<string>("");
+
+  // UX state
+  const [loading, setLoading] = React.useState<boolean>(false);
+  const [error, setError] = React.useState<string | null>(null);
+
+  // Clerk + route params
+  const { getToken } = useAuth();
+  const { id } = useParams<{ id: string }>();
   const selected = React.useMemo(
     () => requests.find((r) => r.id === selectedId),
     [requests, selectedId]
   );
+
+  React.useEffect(() => {
+    let alive = true;
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const token = await getToken();
+        const res = await fetch(
+          `${API}/workspaces/${id}/shift-requests?status=pending`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        // Expecting { requests: AnyRequest[] } from the skeleton route.
+        const list: AnyRequest[] = data.requests ?? [];
+        if (!alive) return;
+        setRequests(list);
+        setSelectedId(list[0]?.id ?? "");
+      } catch (e: any) {
+        if (!alive) return;
+        setError(e?.message ?? "Failed to load requests");
+      } finally {
+        if (!alive) return;
+        setLoading(false);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [id, getToken]);
   
 
   // Confirmation dialog state
   const [confirm, setConfirm] = React.useState<{
     open: boolean;
-    action: "approve" | "deny" | null;
+    action: "approve" | "reject" | null;
   }>({ open: false, action: null });
 
-  function openConfirm(action: "approve" | "deny") {
+  function openConfirm(action: "approve" | "reject") {
     setConfirm({ open: true, action });
   }
   function closeConfirm() {
     setConfirm({ open: false, action: null });
   }
 
-  function applyDecision() {
-  if (!selected || !confirm.action) return;
+  async function applyDecision() {
+    if (!selected || !confirm.action) return;
 
-  // compute next list & next selection based on current state
-  const idx = requests.findIndex((r) => r.id === selected.id);
-  const nextRequests = requests.filter((r) => r.id !== selected.id);
-  const nextSelected =
-    nextRequests[idx]?.id ?? nextRequests[idx - 1]?.id ?? "";
+    try {
+      const token = await getToken();
+      const path = confirm.action === "approve" ? "approve" : "reject";
+      const res = await fetch(
+        `${API}/workspaces/${id}/shift-requests/${selected.id}/${path}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ decision: confirm.action }),
+        }
+      );
 
-  setRequests(nextRequests);
-  setSelectedId(nextSelected);
-  closeConfirm();
-}
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      // Remove the handled request locally (only pending are shown)
+      const idx = requests.findIndex((r) => r.id === selected.id);
+      const nextRequests = requests.filter((r) => r.id !== selected.id);
+      const nextSelected =
+        nextRequests[idx]?.id ?? nextRequests[idx - 1]?.id ?? "";
+
+      setRequests(nextRequests);
+      setSelectedId(nextSelected);
+    } catch (e: any) {
+      setError(
+        `Failed to ${confirm.action} request${
+          e?.message ? `: ${e.message}` : ""
+        }`
+      );
+    } finally {
+      closeConfirm();
+    }
+  }
 
   // Helpers
   function fmtRange(range: { start: string; end: string }) {
@@ -146,7 +183,15 @@ export default function ShiftRequestsPage() {
     <div className="flex min-h-[640px]">
       {/* Left pane: request list */}
       <aside className="w-1/2 border-r border-gray-200 p-4">
-        <h2 className="mb-3 text-lg font-semibold text-gray-800">Requests</h2>
+        <h2 className="mb-3 text-lg font-semibold text-gray-800">Requests</h2>  
+        {loading && (
+          <div className="mb-3 text-sm text-gray-500">Loading requests…</div>
+        )}
+        {error && (
+          <div className="mb-3 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+            Error: {error}
+          </div>
+        )}
 
         <div className="space-y-3">
           {requests.length === 0 ? (
@@ -265,7 +310,7 @@ export default function ShiftRequestsPage() {
               {/* Deny */}
               <button
                 type="button"
-                onClick={() => openConfirm("deny")}
+                onClick={() => openConfirm("reject")}
                 className="inline-flex items-center gap-2 rounded-lg border bg-red-500 px-4 py-2 text-sm font-medium text-black hover:bg-red-700"
               >
                 <X size={16} /> Deny
