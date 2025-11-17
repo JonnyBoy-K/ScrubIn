@@ -7,7 +7,40 @@ const router = express.Router({ mergeParams: true });
 
 router.get('/', async (req, res) => {
 	// TODO: Implement get shift requests by workspace
-	res.status(501).json({ error: 'Not implemented' });
+	try {
+		const { workspaceId } = (req.params as { workspaceId: string });
+		const { status } = req.query;
+
+		// filter by workspaceId and optional status
+		const where: any = { workspaceId: Number(workspaceId) };
+
+		// Map status string to enum value
+		if (status && typeof status === 'string') {
+			const upper = status.toUpperCase();
+			if (upper in ShiftRequestStatus) {
+				where.status = ShiftRequestStatus[upper as keyof typeof ShiftRequestStatus];
+			} else {
+				return res.status(400).json({ error: 'Invalid status value' });
+			}
+		}
+
+		// Query shift requests
+		const shiftRequests = await prisma.shiftRequest.findMany({
+			where,
+			include: {
+				requestor: true,
+				workspace: true,
+				lendedShift: true,
+				requestedShift: true,
+			},
+			orderBy: { id: 'desc' },
+		})
+		
+		res.status(200).json(shiftRequests);
+	} catch (error) {
+		console.error(error);
+		res.status(500).json({ error: 'Failed to fetch shift requests' });
+	}
 });
 
 router.get('/:id', async (req, res) => {

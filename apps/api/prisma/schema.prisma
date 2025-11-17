@@ -18,6 +18,7 @@ model User {
   Shift                   Shift[]
   UserRoleMembership      UserRoleMembership[]
   UserWorkspaceMembership UserWorkspaceMembership[]
+  ShiftRequests           ShiftRequest[]            @relation("RequestorRelation")
 }
 
 model UserWorkspaceMembership {
@@ -37,20 +38,23 @@ model Workspace {
   location        String
   roleMemberships UserRoleMembership[]
   memberships     UserWorkspaceMembership[]
+  shiftRequests   ShiftRequest[]
 }
 
 model Shift {
-  id             Int       @id @default(autoincrement())
-  startTime      DateTime
-  endTime        DateTime
-  clockInTime    DateTime?
-  clockOutTime   DateTime?
-  userId         Int
-  startBreakTime DateTime?
-  endBreakTime   DateTime?
-  breakDuration  Int
-  workspaceId    Int
-  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                Int            @id @default(autoincrement())
+  startTime         DateTime
+  endTime           DateTime
+  clockInTime       DateTime?
+  clockOutTime      DateTime?
+  userId            Int
+  startBreakTime    DateTime?
+  endBreakTime      DateTime?
+  breakDuration     Int
+  workspaceId       Int
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lendedRequests    ShiftRequest[] @relation("Lended")
+  requestedRequests ShiftRequest[] @relation("Requested")
 }
 
 model Role {
@@ -78,12 +82,16 @@ model UserRoleMembership {
 }
 
 model ShiftRequest {
-  id               Int  @id @default(autoincrement())
+  id               Int       @id @default(autoincrement())
   requestorId      Int
   workspaceId      Int
   lendedShiftId    Int
   requestedShiftId Int?
   status           Int
+  requestor        User      @relation("RequestorRelation", fields: [requestorId], references: [id], onDelete: Cascade)
+  workspace        Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  lendedShift      Shift     @relation("Lended", fields: [lendedShiftId], references: [id], onDelete: Cascade)
+  requestedShift   Shift?    @relation("Requested", fields: [requestedShiftId], references: [id])
 }
 
 model Invitation {
