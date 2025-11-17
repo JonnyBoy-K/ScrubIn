@@ -196,10 +196,8 @@ export default function ShiftRequestsPage() {
 
   // Helpers
   function fmtRange(range: { start: string; end: string }) {
-    const s = new Date(range.start);
-    const e = new Date(range.end);
-    return `${s.toLocaleDateString()} - ${e.toLocaleDateString()}`;
-  }
+  return `${range.start} → ${range.end}`;
+}
 
   function statusChip(status: RequestStatus) {
     const map: Record<RequestStatus, string> = {
