@@ -26,10 +26,10 @@ import {
 
 
 type ApiShift = { id: number; startTime: string; endTime: string; breakDuration: number | null };
-type ApiUser  = { id: number; firstName: string | null; lastName: string | null };
+type Member = { id: number; firstName: string; lastName?: string | null };
 type WeeklyResponse = {
   days: string[];                             
-  users: ApiUser[];                          
+  users: Member[];                          
   buckets: Record<number, Record<string, ApiShift[]>>;
 };
 
@@ -40,13 +40,13 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
   const [anchor, setAnchor] = useState<Date>(getToday());
   const [isModal, setIsModal] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false); 
-  const [users, setUsers] = useState([]); 
+  const [users, setUsers] = useState<Member[]>([]); 
   const [shifts, setShifts] = useState<WeeklyResponse>({
   days: [],
   users: [],
   buckets: {},
   });
-  
+
   const apiClient = useApiClient();
   const week = useMemo(() => makeWeek(anchor), [anchor]);
   const nextWeek = () => setAnchor(w => moveWeek(w,1).anchor); // Moves 1 week forwards
@@ -57,7 +57,7 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
     try {
       setIsLoading(true);
       const response = await apiClient.getWorkspaceMembers(id);
-      setUsers(response.members); 
+      setUsers(response.members ?? []); 
       setIsLoading(false);
 
     } catch (error) {

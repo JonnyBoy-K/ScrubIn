@@ -50,6 +50,7 @@ const AddShiftModal: React.FC<AddShiftModalProps> = ({ open, setOpen, users, wor
     };
 
     try {
+      setIsSubmitting(true); 
       const data = await clientAPI.createShift(workspaceId, payload);
       console.log(data); 
       console.log("Submitting shift:", payload);
@@ -67,8 +68,12 @@ const AddShiftModal: React.FC<AddShiftModalProps> = ({ open, setOpen, users, wor
         setOpen(false); 
       }
 
+      setIsSubmitting(false);
+
     } catch (e) {
       console.log("Error adding shifts", e);
+    } finally{
+      setIsSubmitting(false);
     }
   };
 
@@ -119,7 +124,7 @@ const AddShiftModal: React.FC<AddShiftModalProps> = ({ open, setOpen, users, wor
                 style={{ width: 200 }}
                 placeholder="Select Employee"
                 onChange={(value) => setEmployee(value)}
-                options={users?.map(user => ({
+                options={users?.map((user: { id: any; firstName: any; }) => ({
                 value: Number(user.id),
                 label: user.firstName,
                 })) ?? []}
@@ -163,7 +168,7 @@ const AddShiftModal: React.FC<AddShiftModalProps> = ({ open, setOpen, users, wor
               type="primary"
               className="bg-[#F72585]"
               onClick={handleSubmit}
-              loading={isSubmitting &&  <LoadingOutlined />}
+              loading={isSubmitting ? { icon: <LoadingOutlined /> } : false}
               
               
             >

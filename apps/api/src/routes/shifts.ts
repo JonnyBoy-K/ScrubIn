@@ -1,12 +1,12 @@
 import express from 'express'
 import { prisma } from '../db'
-
+import { Request, Response } from 'express'
 const router = express.Router({ mergeParams: true })
 
-router.get('/', async (req, res) => {
+router.get('/', async (req: Request<{ workspaceId: string }, any, any, { start?: string; end?: string }>, res: Response) => {
     try {
-        const workspaceId = Number(req.params.workspaceId)
-        const { start, end } = req.query as { start?: string; end?: string }
+        const workspaceId = Number(req.params.workspaceId); 
+        const { start, end } = req.query; 
         if (!Number.isInteger(workspaceId))
             return res.status(400).json({ message: 'Invalid workspaceId' })
         if (!start || !end) return res.status(400).json({ message: 'Missing start or end' })
