@@ -3,55 +3,26 @@ import { Dimensions } from 'react-native';
 import { useState } from 'react';
 import { View, Text, Button, StyleSheet, ScrollView, Image, TouchableOpacity} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '@clerk/clerk-expo';
+import { useApiClient, Shift } from '@/api/client';
 
 const months = [ 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December' ];
 const { height } = Dimensions.get('window');
 
-type Shift = {
+type FormattedShift = {
   day: string;
   role: string;
   tag: string;
   time: string;
   location: string;
+  date: Date;
 };
 type WeekData = {
   week: string;
-  shifts: Shift[];
-};
-// generated using ai
-const dummyShifts: Record<string, WeekData[]> = {
-  October: [
-    {
-      week: 'Week 1',
-      shifts: [
-        { day: 'Monday', role: 'Vet Tech', tag: 'Morning', time: '8am - 4pm', location: '3315 Fairlight Drive' },
-        { day: 'Wednesday', role: 'Groomer', tag: 'Stay Late', time: '10am - 8pm', location: 'Circle Drive South' },
-      ]
-    },
-    {
-      week: 'Week 2',
-      shifts: [
-        { day: 'Tuesday', role: 'Assistant', tag: 'Morning', time: '9am - 5pm', location: '22nd Street' },
-        { day: 'Friday', role: 'Vet Tech', tag: 'Stay Late', time: '11am - 9pm', location: 'Confederation Drive' },
-      ]
-    },
-    {
-      week: 'Week 3',
-      shifts: [
-        { day: 'Monday', role: 'Vet Tech', tag: 'Morning', time: '8am - 4pm', location: '8th Street' },
-        { day: 'Thursday', role: 'Receptionist', tag: 'Afternoon', time: '12pm - 8pm', location: 'Fairhaven Blvd' },
-      ]
-    },
-    {
-      week: 'Week 4',
-      shifts: [
-        { day: 'Wednesday', role: 'Groomer', tag: 'Morning', time: '8am - 2pm', location: 'Stonebridge Blvd' },
-      ]
-    }
-  ],
+  shifts: FormattedShift[];
 };
 
-const ShiftCard = ({ shift }: { shift: any }) => (
+const ShiftCard = ({ shift }: { shift: FormattedShift }) => (
   <View style={styles.shiftContainer}>
     <Image style={{height: 40, width: 40, borderRadius: '50%'}} source={require('assets/example-vet.png')}/>
     <View style={styles.shiftTextContainer}>
@@ -77,6 +48,82 @@ const ShiftCard = ({ shift }: { shift: any }) => (
     </View>
   </View>
 );
+
+const formatShiftTime = (startTime: string, endTime: string): string => {
+  const start = new Date(startTime);
+  const end = new Date(endTime);
+
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    }).toLowerCase();
+  };
+  return `${formatTime(start)} - ${formatTime(end)}`;
+};
+
+const getShiftTag = (startTime: string): string => {
+  const hour = new Date(startTime).getHours();
+  if (hour < 12) return 'Morning';
+  if (hour < 17) return 'Afternoon';
+  return 'Evening';
+}
+
+const formatShiftData = (shifts: Shift[]): Record<string, WeekData[]> => {
+  const formattedData: Record<string, WeekData[]> = {};
+
+  shifts.forEach(shift => {
+    const date = new Date(shift.startTime);
+    const month = months[date.getMonth()];
+    const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+    const weekNumber = Math.ceil(date.getDate() / 7);
+    const weekKey = `Week ${weekNumber}`;
+
+    if (!formattedData[month]) {
+      formattedData[month] = [];
+    }
+
+    let weekData = formattedData[month].find(week => week.week === weekKey);
+    if (!weekData) {
+      weekData = { week: weekKey, shifts: [] };
+      formattedData[month].push(weekData);
+    }
+
+    const formattedShift: FormattedShift = {
+      day: dayName,
+      role: 'Vet Tech', // Placeholder
+      tag: getShiftTag(shift.startTime),
+      time: formatShiftTime(shift.startTime, shift.endTime),
+      location: shift.workspace ? shift.workspace.location : 'Unknown Location',
+      date: date
+    };
+
+    weekData.shifts.push(formattedShift);
+  });
+
+  // sort weeks and shifts within each month
+  Object.keys(formattedData).forEach(month => {
+    formattedData[month].sort((a, b) => {
+      const weekA = parseInt(a.week.replace('Week ', ''));
+      const weekB = parseInt(b.week.replace('Week ', ''));
+      return weekA - weekB;
+    });
+
+    formattedData[month].forEach(week => {
+      week.shifts.sort((a, b) => a.date.getTime() - b.date.getTime());
+    });
+  });
+
+  return formattedData;
+}
+
+const getMonthDateRange = (month: string, year: number = new Date().getFullYear()) => {
+  const monthIndex = months.indexOf(month);
+  const startDate = new Date(year, monthIndex, 1);
+  const endDate = new Date(year, monthIndex + 1, 0);
+  return { startDate, endDate };
+}
 
 export default function ViewShiftPage() {
   const [selectedMonth, setSelectedMonth] = useState<string>('October');
