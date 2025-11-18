@@ -25,3 +25,54 @@ export interface Shift {
         location: string;
     };
 }
+
+export interface UserShiftsResponse {
+    shifts: Shift[];
+}
+
+// developed using ai
+class ApiClient {
+    private getToken: () => Promise<string | null>;
+    constructor(getToken: () => Promise<string | null>) {
+        this.getToken = getToken;
+    }
+
+    private async fetchWithAuth(url: string, options: RequestInit = {}) {
+        const token = await this.getToken();
+
+        const headers = {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...options.headers
+        };
+
+        const response = await fetch(url, { ...options, headers });
+        if (!response.ok) {
+            throw new Error(`API request failed with status ${response.status}`);
+        }
+        return response.json();
+    }
+
+    async getUserShifts(userId: number, startDate?: Date, endDate?: Date): Promise<Shift[]> {
+        const params = new URLSearchParams();
+        if (startDate) {
+            params.append('start', startDate.toISOString());
+        }
+        if (endDate) {
+            params.append('end', endDate.toISOString());
+        }
+
+        const url = `${API_URL}/users/${userId}/shifts?${params.toString()}`;
+        return this.fetchWithAuth(url);
+    }
+
+    async getCurrentUser(): Promise<any> {
+        const url = `${API_URL}/users/current`;
+        return this.fetchWithAuth(url);
+    }
+}
+
+export function useApiClient() {
+    const { getToken } = useAuth();
+    return new ApiClient(getToken);
+}
