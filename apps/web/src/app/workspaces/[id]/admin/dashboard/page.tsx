@@ -9,7 +9,7 @@ import {
   getToday, 
   makeWeek, 
   moveWeek,
-  onPickWeek } from '../../../../../helpers/time'; 
+  onPickWeek } from '../../../../../../helpers/time'; 
 import {
   UsersRound,
   ChevronLeft,
