@@ -2,9 +2,8 @@
 import React, { useState, useMemo, useEffect, use } from "react";
 import AddShiftModal from "../../../../../components/AddShiftModal";
 import dayjs from "dayjs";
-import { Spin, Button, DatePicker } from "antd";
+import { Spin, Button, DatePicker, Alert } from "antd";
 import { LoadingOutlined } from '@ant-design/icons';
-import { useAuth } from "@clerk/nextjs";
 import { useApiClient } from "@/hooks/useApiClient";
 import { 
   getToday, 
@@ -34,18 +33,17 @@ type WeeklyResponse = {
 };
 
 
-
 const page = ({ params }: { params: Promise<{ id: string }> }) => {
   const { id } = use(params);
+  const workspaceId = Number(id);
+  const hasValidWorkspace = Number.isInteger(workspaceId);
+  const emptyWeekly: WeeklyResponse = { days: [], users: [], buckets: {} };
   const [anchor, setAnchor] = useState<Date>(getToday());
   const [isModal, setIsModal] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false); 
   const [users, setUsers] = useState<Member[]>([]); 
-  const [shifts, setShifts] = useState<WeeklyResponse>({
-  days: [],
-  users: [],
-  buckets: {},
-  });
+  const [shifts, setShifts] = useState<WeeklyResponse>(emptyWeekly);
+  const [error, setError] = useState<string | null>(null);
 
   const apiClient = useApiClient();
   const week = useMemo(() => makeWeek(anchor), [anchor]);
@@ -54,6 +52,7 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
 
 
   const getUsers = async() => {
+    if (!hasValidWorkspace) return;
     try {
       setIsLoading(true);
       const response = await apiClient.getWorkspaceMembers(id);
@@ -61,30 +60,33 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
       setIsLoading(false);
 
     } catch (error) {
-      // Need a better error handling system
       console.log("Error fetching users"); 
+      setError("Could not load users");
     } finally {
       setIsLoading(false);
     }
   }
 
   const getShifts = async() => {
+    if (!hasValidWorkspace) return;
     try {
       setIsLoading(true); 
       const params = new URLSearchParams({
         start: week.start.toISOString(),
         end: week.end.toISOString()
       });
-      
+
+      // API client throws error; start/end are required
       const data: WeeklyResponse = await apiClient.getWorkspaceShifts(id, {
         start: week.start.toISOString(),
         end: week.end.toISOString(),
       })
-      setShifts(data ?? []); 
+      setShifts(data ?? emptyWeekly); 
       setIsLoading(false);  
 
     } catch (error) {
-      console.log(error); 
+      console.log(error);
+      setError("Could not load shifts");
     } finally {
       setIsLoading(false); 
     }
@@ -105,9 +107,10 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
   }
 
  useEffect( () => {
+  if (!hasValidWorkspace) return;
   getUsers();
-  getShifts();    
- }, [id, week.start, week.end]); 
+  getShifts(); // Refetch when workspace changes or week window moves
+ }, [hasValidWorkspace, id, week.start, week.end]); 
 
   return (
       <div className="min-h-screen border-b border-border bg-card px-6 py-4">
@@ -141,6 +144,11 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
         </div>
 
         {/* Day headers */}
+        {error && (
+          <div className="mb-3">
+            <Alert type="error" message={error} showIcon />
+          </div>
+        )}
         <Spin spinning={isLoading} indicator={<LoadingOutlined />} size="large">
         <div className="flex-1 overflow-auto pt-5">
             <div className="min-w-[1200px]">

@@ -40,11 +40,12 @@ export function makeWeek(anchor: Date, weekStartsOn = WEEK_START): Week {
 }
 
 /**
- * 
- * @param anchor 
- * @param offset 
- * @param weekStartsOn 
- * @returns 
+ * Moves the current week anchor by a given offset and returns the new week window.
+ *
+ * @param anchor current anchor date
+ * @param offset number of weeks to move (positive or negative)
+ * @param weekStartsOn first day of week (defaults to WEEK_START)
+ * @returns the recalculated week structure for the new anchor
  */
 export function moveWeek(anchor: Date, offset: number, weekStartsOn: Day = WEEK_START): Week {
     const nextAnchor = addWeeks(anchor, offset);
@@ -64,8 +65,15 @@ export function weekLabel(w: Week): String {
     return `${format(w.start, "MMM d, yyyy")} , ${format(w.end, "MMM d, yyyy")}`;
 }
 
+/**
+ * Handles a week picker change: converts the selected Dayjs to a Date
+ * and updates the week anchor. No-op if nothing is selected.
+ *
+ * @param value Dayjs value from the picker (or null when cleared)
+ * @param setAnchor state setter for the current anchor date
+ */
 export  function onPickWeek(value: dayjs.Dayjs | null, setAnchor: React.Dispatch<React.SetStateAction<Date>>) {
     if (!value) return; 
     const picked = value.toDate();
     setAnchor(picked); 
-  }
+}

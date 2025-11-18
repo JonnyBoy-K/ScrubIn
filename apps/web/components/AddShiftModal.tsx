@@ -11,6 +11,7 @@ import {
   Alert,
 } from "antd";
 import { LoadingOutlined } from '@ant-design/icons';
+
 type AddShiftModalProps = {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -20,8 +21,9 @@ type AddShiftModalProps = {
 
 };
 
+
 const AddShiftModal: React.FC<AddShiftModalProps> = ({ open, setOpen, users, workspaceId, onSuccess }) => {
-  const [employee, setEmployee] = useState<any | undefined>(undefined);
+  const [user, setUser] = useState<any | undefined>(undefined);
   const [dates, setDates] = useState<Dayjs[] | null>(null);
   const [timeRange, setTimeRange] = useState<[Dayjs, Dayjs] | null>(null);
   const [alertDesc, setAlertDesc] = useState<string | null>(null);
@@ -34,7 +36,8 @@ const AddShiftModal: React.FC<AddShiftModalProps> = ({ open, setOpen, users, wor
   };
 
   const handleSubmit = async () => {
-    if (!employee || !dates || !timeRange) {
+    setAlertDesc(null);
+    if (!user || !dates || !timeRange) {
       setAlertDesc("Please fill in all fields.");
       setOpenAlert(true);
       return;
@@ -43,7 +46,7 @@ const AddShiftModal: React.FC<AddShiftModalProps> = ({ open, setOpen, users, wor
     const shifts = buildShift(dates, timeRange);
 
     const payload = {
-      employee,
+      user,
       workspaceId,
       breakDuration: 30,
       shifts,
@@ -57,7 +60,7 @@ const AddShiftModal: React.FC<AddShiftModalProps> = ({ open, setOpen, users, wor
 
       setAlertDesc(null);
       setOpenAlert(false);
-      setEmployee(undefined);
+      setUser(undefined);
       setDates(null);
       setTimeRange(null);
       
@@ -72,6 +75,7 @@ const AddShiftModal: React.FC<AddShiftModalProps> = ({ open, setOpen, users, wor
 
     } catch (e) {
       console.log("Error adding shifts", e);
+      setAlertDesc("Could not create shift. Please try again.");
     } finally{
       setIsSubmitting(false);
     }
@@ -120,10 +124,10 @@ const AddShiftModal: React.FC<AddShiftModalProps> = ({ open, setOpen, users, wor
               <span className="text-md font-semibold">Employee</span>
               <Select
                 showSearch
-                value={employee}
+                value={user}
                 style={{ width: 200 }}
                 placeholder="Select Employee"
-                onChange={(value) => setEmployee(value)}
+                onChange={(value) => setUser(value)}
                 options={users?.map((user: { id: any; firstName: any; }) => ({
                 value: Number(user.id),
                 label: user.firstName,

@@ -3,69 +3,75 @@ import { prisma } from '../db'
 import { Request, Response } from 'express'
 const router = express.Router({ mergeParams: true })
 
-router.get('/', async (req: Request<{ workspaceId: string }, any, any, { start?: string; end?: string }>, res: Response) => {
-    try {
-        const workspaceId = Number(req.params.workspaceId); 
-        const { start, end } = req.query; 
-        if (!Number.isInteger(workspaceId))
-            return res.status(400).json({ message: 'Invalid workspaceId' })
-        if (!start || !end) return res.status(400).json({ message: 'Missing start or end' })
+router.get(
+    '/',
+    async (
+        req: Request<{ workspaceId: string }, any, any, { start?: string; end?: string }>,
+        res: Response,
+    ) => {
+        try {
+            const workspaceId = Number(req.params.workspaceId)
+            const { start, end } = req.query
+            if (!Number.isInteger(workspaceId))
+                return res.status(400).json({ message: 'Invalid workspaceId' })
+            if (!start || !end) return res.status(400).json({ message: 'Missing start or end' })
 
-        const startDate = new Date(start)
-        const endDate = new Date(end)
+            const startDate = new Date(start)
+            const endDate = new Date(end)
 
-        const shifts = await prisma.shift.findMany({
-            where: { workspaceId, startTime: { lt: endDate }, endTime: { gt: startDate } },
-            orderBy: { startTime: 'asc' },
-            include: { user: { select: { id: true, firstName: true, lastName: true } } },
-        })
+            const shifts = await prisma.shift.findMany({
+                where: { workspaceId, startTime: { lt: endDate }, endTime: { gt: startDate } },
+                orderBy: { startTime: 'asc' },
+                include: { user: { select: { id: true, firstName: true, lastName: true } } },
+            })
 
-        // build day list, assume start and end are midnight boundaries in workspace tz already
-        const days: string[] = []
-        for (
-            let d = new Date(startDate);
-            d < endDate;
-            d = new Date(d.getTime() + 24 * 3600 * 1000)
-        ) {
-            days.push(d.toISOString().slice(0, 10)) // yyyy-mm-dd
-        }
+            // build day list, assume start and end are midnight boundaries in workspace tz already
+            const days: string[] = []
+            for (
+                let d = new Date(startDate);
+                d < endDate;
+                d = new Date(d.getTime() + 24 * 3600 * 1000)
+            ) {
+                days.push(d.toISOString().slice(0, 10)) // yyyy-mm-dd
+            }
 
-        // bucket: { [userId]: { [yyyy-mm-dd]: Shift[] } }
-        const buckets: Record<number, Record<string, any[]>> = {}
-        const users: Record<
-            number,
-            { id: number; firstName: string | null; lastName: string | null }
-        > = {}
+            // bucket: { [userId]: { [yyyy-mm-dd]: Shift[] } }
+            const buckets: Record<number, Record<string, any[]>> = {}
+            const users: Record<
+                number,
+                { id: number; firstName: string | null; lastName: string | null }
+            > = {}
 
-        for (const s of shifts) {
-            users[s.user.id] = users[s.user.id] ?? s.user
-            const sStart = s.startTime.getTime()
-            const sEnd = s.endTime.getTime()
+            for (const s of shifts) {
+                users[s.user.id] = users[s.user.id] ?? s.user
+                const sStart = s.startTime.getTime()
+                const sEnd = s.endTime.getTime()
 
-            for (const day of days) {
-                const dayStart = new Date(day + 'T00:00:00.000Z').getTime()
-                const dayEnd = dayStart + 24 * 3600 * 1000
-                if (sStart < dayEnd && sEnd > dayStart) {
-                    buckets[s.userId] ??= {}
-                    buckets[s.userId][day] ??= []
-                    // trim payload to what UI needs
-                    buckets[s.userId][day].push({
-                        id: s.id,
-                        startTime: s.startTime,
-                        endTime: s.endTime,
-                        breakDuration: s.breakDuration,
-                    })
+                for (const day of days) {
+                    const dayStart = new Date(day + 'T00:00:00.000Z').getTime()
+                    const dayEnd = dayStart + 24 * 3600 * 1000
+                    if (sStart < dayEnd && sEnd > dayStart) {
+                        buckets[s.userId] ??= {}
+                        buckets[s.userId][day] ??= []
+                        // trim payload to what UI needs
+                        buckets[s.userId][day].push({
+                            id: s.id,
+                            startTime: s.startTime,
+                            endTime: s.endTime,
+                            breakDuration: s.breakDuration,
+                        })
+                    }
                 }
             }
-        }
 
-        // response shaped for cheap rendering
-        res.json({ days, users: Object.values(users), buckets })
-    } catch (error) {
-        console.log('Error in shifts route', error)
-        res.status(500).json({ message: 'Internal server error' })
-    }
-})
+            // response shaped for cheap rendering
+            res.json({ days, users: Object.values(users), buckets })
+        } catch (error) {
+            console.log('Error in shifts route', error)
+            res.status(500).json({ message: 'Internal server error' })
+        }
+    },
+)
 
 router.get('/:id', async (req, res) => {
     // TODO: Implement get single shift
@@ -74,22 +80,22 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
     try {
-        const { workspaceId, employee /* should be userId */, shifts, breakDuration } = req.body
-        /*
-     		Need checks on variables workspaceId, userId(employee for right now), breakDuration
-    	*/
-
+        const { workspaceId, user, shifts, breakDuration } = req.body
+        
+        // Reject invalid ISO strings
         const rows = shifts.map(
             ({ startTime, endTime }: { startTime: string; endTime: string }) => {
                 const start = new Date(startTime)
                 const end = new Date(endTime)
-
+                
+                // Ensure the shift ends after it starts
                 if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()))
                     throw new Error('Invalid ISO time')
                 if (end <= start) throw new Error('endTime must be after startTime')
-
+                
+                // Return DB-ready shape
                 return {
-                    userId: employee,
+                    userId: user,
                     workspaceId: workspaceId,
                     breakDuration: Number(breakDuration) || 30,
                     startTime: start,
@@ -135,8 +141,7 @@ router.patch('/:id', async (req, res) => {
         })
 
         return res.status(200).json(updated)
-    
-	} catch (error) {
+    } catch (error) {
         console.log('Error in shifts route', error)
         res.status(500).json({ message: 'Internal server error' })
     }
