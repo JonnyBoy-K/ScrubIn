@@ -62,5 +62,34 @@ router.get('/:id/shifts', async (req, res) => {
 	}
 });
 
+router.get('/current', async (req, res) => {
+	try {
+		const { userId } = req.auth;
+		if (!userId) {
+			return res.status(401).json({ error: 'Unauthorized' });
+		}
+
+		const user = await prisma.user.findUnique({
+			where: { clerkId: userId }
+			include: {
+				UserWorkspaceMembership: {
+					include: {
+						workspace: true
+					}
+				}
+			}
+		});
+
+		if (!user) {
+			return res.status(404).json({ error: 'User not found' });
+		}
+
+		res.json(user);
+	} catch (error) {
+		console.error('Error fetching current user:', error);
+		return res.status(500).json({ error: 'Internal server error' });
+	}
+});
+
 export default router;
 
