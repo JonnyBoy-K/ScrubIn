@@ -1,161 +1,215 @@
 "use client";
-import { SignedIn } from "@clerk/nextjs";
-import React, { useState } from "react";
-import { Spin } from "antd";
+import React, { useState, useMemo, useEffect, use } from "react";
+import AddShiftModal from "../../../../../../components/AddShiftModal";
+import dayjs from "dayjs";
+import { Spin, Button, DatePicker, Alert } from "antd";
+import { LoadingOutlined } from '@ant-design/icons';
+import { useApiClient } from "@/hooks/useApiClient";
+import { 
+  getToday, 
+  makeWeek, 
+  moveWeek,
+  onPickWeek } from '../../../../../../helpers/time'; 
 import {
-  Calendar,
-  LayoutDashboard,
   UsersRound,
-  UserRoundCog,
-  Send,
-  Bell,
-  Bolt,
   ChevronLeft,
   ChevronRight,
   Plus,
-  Clock,
+  Coffee,
 } from "lucide-react";
-import AddShiftModal from "../../../../../../components/AddShiftModal";
 
-type Shift = {
-  id: number;
-  name: string;
-  role: string;
-  startTime: string;
-  endTime: string;
-  day: string;
+
+import {
+  format,
+  parseISO,
+} from "date-fns"; 
+
+
+type ApiShift = { id: number; startTime: string; endTime: string; breakDuration: number | null };
+type Member = { id: number; firstName: string; lastName?: string | null };
+type WeeklyResponse = {
+  days: string[];                             
+  users: Member[];                          
+  buckets: Record<number, Record<string, ApiShift[]>>;
 };
 
-const DAYS = [
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-];
 
-const page = () => {
-  const [currentWeek, setCurrentWeek] = useState(new Date());
-  const [isLoading, setIsLoading] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+const page = ({ params }: { params: Promise<{ id: string }> }) => {
+  const { id } = use(params);
+  const workspaceId = Number(id);
+  const hasValidWorkspace = Number.isInteger(workspaceId);
+  const emptyWeekly: WeeklyResponse = { days: [], users: [], buckets: {} };
+  const [anchor, setAnchor] = useState<Date>(getToday());
+  const [isModal, setIsModal] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false); 
+  const [users, setUsers] = useState<Member[]>([]); 
+  const [shifts, setShifts] = useState<WeeklyResponse>(emptyWeekly);
+  const [error, setError] = useState<string | null>(null);
 
-  {
-    /* Modal Selections */
+  const apiClient = useApiClient();
+  const week = useMemo(() => makeWeek(anchor), [anchor]);
+  const nextWeek = () => setAnchor(w => moveWeek(w,1).anchor); // Moves 1 week forwards
+  const prevWeek = () => setAnchor(w => moveWeek(w,-1).anchor); // Moves 1 week backwards
+
+
+  const getUsers = async() => {
+    if (!hasValidWorkspace) return;
+    try {
+      setIsLoading(true);
+      const response = await apiClient.getWorkspaceMembers(id);
+      setUsers(response.members ?? []); 
+      setIsLoading(false);
+
+    } catch (error) {
+      console.log("Error fetching users"); 
+      setError("Could not load users");
+    } finally {
+      setIsLoading(false);
+    }
   }
-  const showModal = () => {
-    setIsModalOpen(true);
+
+  const getShifts = async() => {
+    if (!hasValidWorkspace) return;
+    try {
+      setIsLoading(true); 
+      const params = new URLSearchParams({
+        start: week.start.toISOString(),
+        end: week.end.toISOString()
+      });
+
+      // API client throws error; start/end are required
+      const data: WeeklyResponse = await apiClient.getWorkspaceShifts(id, {
+        start: week.start.toISOString(),
+        end: week.end.toISOString(),
+      })
+      setShifts(data ?? emptyWeekly); 
+      setIsLoading(false);  
+
+    } catch (error) {
+      console.log(error);
+      setError("Could not load shifts");
+    } finally {
+      setIsLoading(false); 
+    }
   };
 
-  const [shift, setShift] = useState<Shift[]>([
-    {
-      id: 1,
-      name: "Alice Cartel",
-      role: "Vet Tech",
-      startTime: "09:00",
-      endTime: "17:00",
-      day: "Monday",
-    },
-    {
-      id: 2,
-      name: "Bob Itsaboy",
-      role: "Receptionist",
-      startTime: "10:00",
-      endTime: "18:00",
-      day: "Tuesday",
-    },
-    {
-      id: 3,
-      name: "Jonny Bravo",
-      role: "Veterinarian",
-      startTime: "08:00",
-      endTime: "16:00",
-      day: "Wednesday",
-    },
-    {
-      id: 4,
-      name: "David Suzuki",
-      role: "Kennel Attendant",
-      startTime: "11:00",
-      endTime: "19:00",
-      day: "Thursday",
-    },
-    {
-      id: 5,
-      name: "Adam Eve",
-      role: "Vetrinarian",
-      startTime: "07:00",
-      endTime: "15:00",
-      day: "Friday",
-    },
-  ]);
+  const handleShiftAdded = async() => {
+    try {
+      setIsLoading(true);
+      await getShifts();
+      setIsModal(false);
+      setIsLoading(false);  
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setIsLoading(false); 
+    }
+    
+  }
 
-  const getWeekRange = () => {
-    const start = new Date(currentWeek);
-    start.setDate(start.getDate() - start.getDay()); // Set to Sunday
-    const end = new Date(start);
-    end.setDate(end.getDate() + 6);
-    return `${start.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    })} - ${end.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    })}`;
-  };
+ useEffect( () => {
+  if (!hasValidWorkspace) return;
+  getUsers();
+  getShifts(); // Refetch when workspace changes or week window moves
+ }, [hasValidWorkspace, id, week.start, week.end]); 
 
   return (
-      <div className="flex h-full flex-col bg-white">
-          
-        {/* Adding Shifts Modal */}
-        <AddShiftModal open={isModalOpen} setOpen={setIsModalOpen} />
-
-        {/* View for shifts */}
-        <div className="flex-1 overflow-auto p-6">
-          {!isLoading ? (
-            <div className="grid grid-cols-7 border-x border-gray-200 divide-x divide-gray-200">
-              {DAYS.map((day, index) => (
-                <div key={index} className="min-h-[600px]">
-                  <div className="flex flex-col items-center justify-center p-4">
-                    <text className="text-black text-lg">{day}</text>
-                    <text className="text-gray-500 text-lg ">
-                      {new Date(
-                        currentWeek.getTime() +
-                          (index - currentWeek.getDay()) * 86400000
-                      ).toLocaleDateString("en-US", { day: "numeric" })}
-                    </text>
-                  </div>
-
-                  {shift
-                    .filter((shift) => shift.day === day)
-                    .map((shift, index) => (
-                      <div
-                        key={index}
-                        className="bg-white m-2 p-2 rounded-lg shadow-md flex flex-col gap-1  border-l-4 border-[#F72585]"
-                      >
-                        <text className="text-black text-sm font-semibold">
-                          {shift.name}
-                        </text>
-                        <text className="text-gray-500 text-sm">
-                          {shift.role}
-                        </text>
-                        <text className="text-gray-500 text-sm flex flex-row items-center">
-                          <Clock size={16} className="mr-1" />
-                          {shift.startTime} - {shift.endTime}
-                        </text>
-                      </div>
-                    ))}
-                </div>
-              ))}
+      <div className="min-h-screen border-b border-border bg-card px-6 py-4">
+        {/* Navigation */}
+        <div className="flex items-center justify-between border-b border-muted py-2">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Button onClick={prevWeek} size="large">
+                <ChevronLeft className="h-4 w-4"/>
+              </Button>
+              <DatePicker
+              value={dayjs(anchor)}
+              picker="week"
+              onChange={(value) => onPickWeek(value, setAnchor)}
+              format={() => format(week.start, "yyyy MMMM d")}
+              size="large"
+              
+              />
+              <Button onClick={nextWeek} size="large">
+                <ChevronRight className="h-4 w-4"/>
+              </Button>
             </div>
-          ) : (
-            <div className="flex  flex-row justify-center items-center h-full">
-              <Spin size="large" />
-            </div>
-          )}
+            <Button size="large" onClick={() => setAnchor(getToday())}>
+              Today
+            </Button>
+          </div>
+          {/* Add connection to AddModalShift */}
+          <Button size="large" type="primary" onClick={() => setIsModal(true)}>
+            Add Shifts
+          </Button>
         </div>
+
+        {/* Day headers */}
+        {error && (
+          <div className="mb-3">
+            <Alert type="error" message={error} showIcon />
+          </div>
+        )}
+        <Spin spinning={isLoading} indicator={<LoadingOutlined />} size="large">
+        <div className="flex-1 overflow-auto pt-5">
+            <div className="min-w-[1200px]">
+              <div className="grid grid-cols-8 gap-2 mb-2">
+                  <div className="text-sm font-medium text-muted-foreground py-3">Employee</div>
+                  {week.days.map(d => (
+                    <div key={d.toDateString()} className="text-sm font-medium text-muted-foreground py-3 text-center">
+                      <div>{format(d, "EEE")}</div>
+                      <div className="text-xs text-muted-foreground/70">{format(d, "MMM d")}</div>
+                    </div>
+                  ))}
+              </div>
+
+              <div className="space-y-1">
+                  {users?.map(user => (
+                    <div key={user.id} className="grid grid-cols-8 gap-2 border border-border rounded-lg bg-card hover:bg-card/80 transition-colors">
+                      {/* Emplyee Profile Card for row */}
+                      <div className="flex items-center gap-3 p-4 border-r border-border"> 
+                        <UsersRound />
+                        <div className="text-sm font-medium text-foreground truncate">{user.firstName}</div>
+                      </div>
+                      {shifts.days.map(dayKey => {
+                        const items = shifts?.buckets[user.id]?.[dayKey] ?? [];
+                        return(
+                          <div key={dayKey} className="p-2 min-h-[100px] flex flex-col gap-1">
+                              {items.length === 0 ? (
+                                <Button type="default" className="flex-1">
+                                  <Plus />
+                                </Button>
+                              ): (
+                                items.map(shift => (
+                                  <Button
+                                    key={shift.id}
+                                    type="primary"
+                                    className="flex-1 w-full justify-start"
+                                  >
+                                    <div className="flex flex-col flex-1 text-left gap-1">
+                                      <span className="text-sm font-medium">Manager</span>
+                                      <span className="text-xs">
+                                        {format(parseISO(shift.startTime), "HH:mm")} to{" "}
+                                        {format(parseISO(shift.endTime), "HH:mm")}
+                                      </span>
+                                      <div className="flex flex-row gap-1 items-center">
+                                        <Coffee size={12}/>
+                                        <span className="text-xs">{shift.breakDuration}min</span>
+                                      </div>
+                                    </div>
+                                  </Button>
+                                ))
+                              )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ))}
+              </div>
+            </div>
+        </div>
+        </Spin>
+        <AddShiftModal open={isModal} setOpen={setIsModal} users={users} workspaceId={Number(id)} onSuccess={handleShiftAdded}/>
       </div>
   );
 };

@@ -1,6 +1,6 @@
-import React, { startTransition, useState } from "react";
+import React, { startTransition, useMemo, useState } from "react";
 import { Dayjs } from "dayjs";
-
+import { useApiClient } from "@/hooks/useApiClient";
 import {
   Modal,
   Select,
@@ -10,27 +10,34 @@ import {
   Flex,
   Alert,
 } from "antd";
-import { json } from "stream/consumers";
+import { LoadingOutlined } from '@ant-design/icons';
 
 type AddShiftModalProps = {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  users: any;
+  workspaceId: Number;
+  onSuccess?: ()=> void | Promise<void>;  
+
 };
 
-const AddShiftModal: React.FC<AddShiftModalProps> = ({ open, setOpen }) => {
-  const [employee, setEmployee] = useState<Number | undefined>(undefined);
+
+const AddShiftModal: React.FC<AddShiftModalProps> = ({ open, setOpen, users, workspaceId, onSuccess }) => {
+  const [user, setUser] = useState<any | undefined>(undefined);
   const [dates, setDates] = useState<Dayjs[] | null>(null);
   const [timeRange, setTimeRange] = useState<[Dayjs, Dayjs] | null>(null);
   const [alertDesc, setAlertDesc] = useState<string | null>(null);
   const [openAlert, setOpenAlert] = useState(false);
-  const [isLoading, setIsloading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const clientAPI = useApiClient();
 
   const handleCancel = () => {
     setOpen(false);
   };
 
   const handleSubmit = async () => {
-    if (!employee || !dates || !timeRange) {
+    setAlertDesc(null);
+    if (!user || !dates || !timeRange) {
       setAlertDesc("Please fill in all fields.");
       setOpenAlert(true);
       return;
@@ -39,34 +46,38 @@ const AddShiftModal: React.FC<AddShiftModalProps> = ({ open, setOpen }) => {
     const shifts = buildShift(dates, timeRange);
 
     const payload = {
-      employee,
-      workspaceId: 1,
+      user,
+      workspaceId,
       breakDuration: 30,
       shifts,
     };
 
     try {
-      const res = await fetch(`http://localhost:4000/dummy-create-shift`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) throw new Error((await res.json()) || `HTTP ${res.status}`);
-      const data = await res.json();
+      setIsSubmitting(true); 
+      const data = await clientAPI.createShift(workspaceId, payload);
       console.log(data); 
       console.log("Submitting shift:", payload);
+
       setAlertDesc(null);
       setOpenAlert(false);
-      setEmployee(undefined);
+      setUser(undefined);
       setDates(null);
       setTimeRange(null);
-      setOpen(false);
+      
+      if (onSuccess) {
+        await onSuccess();
+      }
+      else {
+        setOpen(false); 
+      }
+
+      setIsSubmitting(false);
+
     } catch (e) {
       console.log("Error adding shifts", e);
+      setAlertDesc("Could not create shift. Please try again.");
+    } finally{
+      setIsSubmitting(false);
     }
   };
 
@@ -113,17 +124,14 @@ const AddShiftModal: React.FC<AddShiftModalProps> = ({ open, setOpen }) => {
               <span className="text-md font-semibold">Employee</span>
               <Select
                 showSearch
-                value={employee}
+                value={user}
                 style={{ width: 200 }}
                 placeholder="Select Employee"
-                onChange={(value) => setEmployee(1)}
-                options={[
-                  { value: "Alice Cartel", label: "Alice Cartel" },
-                  { value: "Bob Itsaboy", label: "Bob Itsaboy" },
-                  { value: "Jonny Bravo", label: "Jonny Bravo" },
-                  { value: "David Suzuki", label: "David Suzuki" },
-                  { value: "Adam Eve", label: "Adam Eve" },
-                ]}
+                onChange={(value) => setUser(value)}
+                options={users?.map((user: { id: any; firstName: any; }) => ({
+                value: Number(user.id),
+                label: user.firstName,
+                })) ?? []}
                 allowClear
               />
             </div>
@@ -164,6 +172,9 @@ const AddShiftModal: React.FC<AddShiftModalProps> = ({ open, setOpen }) => {
               type="primary"
               className="bg-[#F72585]"
               onClick={handleSubmit}
+              loading={isSubmitting ? { icon: <LoadingOutlined /> } : false}
+              
+              
             >
               Add Shift
             </Button>
