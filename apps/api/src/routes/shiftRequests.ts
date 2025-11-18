@@ -3,35 +3,6 @@ import { prisma } from '../db';
 
 const router = express.Router({ mergeParams: true });
 
-// Status mapping between DB ints and API strings
-const STATUS = {
-  pending: 0,
-  approved: 1,
-  denied: 2,
-} as const;
-
-type StatusKey = keyof typeof STATUS;
-
-function statusToString(code: number): StatusKey {
-  switch (code) {
-    case STATUS.approved:
-      return "approved";
-    case STATUS.denied:
-      return "denied";
-    case STATUS.pending:
-    default:
-      return "pending";
-  }
-}
-
-function statusFromQuery(s: string | undefined): number | undefined {
-  if (!s) return undefined;
-  if (s === "pending" || s === "approved" || s === "denied") {
-    return STATUS[s];
-  }
-  return undefined;
-}
-
 function formatDate(d: Date) {
   // YYYY-MM-DD
   return d.toISOString().slice(0, 10);
@@ -50,20 +21,33 @@ function fullName(user: { firstName: string | null; lastName: string | null } | 
   return joined || "Unknown";
 }
 
+function computeStatus(row: { approvedByRequested: string; approvedByManager: string | null }) {
+  const req = (row.approvedByRequested || '').toUpperCase();
+  const mgr = (row.approvedByManager || '').toUpperCase();
+  if (req === 'DENIED' || mgr === 'DENIED') return 'denied' as const;
+  if (req === 'APPROVED' && mgr === 'APPROVED') return 'approved' as const;
+  return 'pending' as const;
+}
 
 router.get('/', async (req, res) => {
 	try {
-      const workspaceId = Number(req.params.workspaceId);
+      const workspaceId = Number((req.params as any).workspaceId);
   
       if (!workspaceId || Number.isNaN(workspaceId)) {
         return res.status(400).json({ error: "Invalid workspace id" });
       }
-  
-      const statusCode = statusFromQuery(req.query.status as string | undefined);
-  
+
+      const statusFilter = (req.query.status as string | undefined)?.toLowerCase();
       const where: any = { workspaceId };
-      if (typeof statusCode === "number") {
-        where.status = statusCode;
+      if (statusFilter === 'approved') {
+        where.AND = [{ approvedByRequested: 'APPROVED' }, { approvedByManager: 'APPROVED' }];
+      } else if (statusFilter === 'denied') {
+        where.OR = [{ approvedByRequested: 'DENIED' }, { approvedByManager: 'DENIED' }];
+      } else if (statusFilter === 'pending') {
+        where.AND = [
+          { approvedByRequested: { not: 'DENIED' } },
+          { OR: [{ approvedByManager: null }, { approvedByManager: 'PENDING' }] },
+        ];
       }
   
       const rows = await prisma.shiftRequest.findMany({
@@ -107,7 +91,7 @@ router.get('/', async (req, res) => {
   
           const base = {
             id: String(row.id),
-            status: statusToString(row.status),
+            status: computeStatus(row),
           };
   
           if (!requested) {
@@ -157,7 +141,7 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
 	try {
-      const workspaceId = Number(req.params.workspaceId);
+      const workspaceId = Number((req.params as any).workspaceId);
       const id = Number(req.params.id);
   
       if (!workspaceId || Number.isNaN(workspaceId) || Number.isNaN(id)) {
@@ -194,7 +178,7 @@ router.get('/:id', async (req, res) => {
   
       const base = {
         id: String(row.id),
-        status: statusToString(row.status),
+        status: computeStatus(row),
       };
   
       let requestDto: any;
@@ -252,7 +236,7 @@ router.delete('/:id', async (req, res) => {
 
 router.post('/:id/approve', async (req, res) => {
 	try {
-      const workspaceId = Number(req.params.workspaceId);
+      const workspaceId = Number((req.params as any).workspaceId);
       const id = Number(req.params.id);
   
       if (!workspaceId || Number.isNaN(workspaceId) || Number.isNaN(id)) {
@@ -281,7 +265,7 @@ router.post('/:id/approve', async (req, res) => {
 
 router.post('/:id/reject', async (req, res) => {
 	try {
-      const workspaceId = Number(req.params.workspaceId);
+      const workspaceId = Number((req.params as any).workspaceId);
       const id = Number(req.params.id);
   
       if (!workspaceId || Number.isNaN(workspaceId) || Number.isNaN(id)) {

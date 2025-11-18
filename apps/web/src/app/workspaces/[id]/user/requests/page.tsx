@@ -8,222 +8,203 @@ import {
     Dialog,
     DialogContent,
     DialogDescription,
+		DialogFooter,
     DialogHeader,
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
 import { Plus } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+	import { Input } from "@/components/ui/input";
+	import { Label } from "@/components/ui/label";
+import { useAuth, useUser } from "@clerk/nextjs";
+import { useParams } from "next/navigation";
+import { createApiClient } from "@scrubin/api-client";
 
 export default function Page() {
-    type RequestStatus = "pending" | "approved" | "rejected";
-    type ShiftDetails = {
-        date: string;
-        time: string;
-        role?: string;
-        location?: string;
-    };
-    type TradeRequest = {
+    type DecisionStatus = "pending" | "approved" | "denied";
+    type BaseReq = {
         id: string;
-        requesterName: string;
-        requestedWithName: string;
-        giving: ShiftDetails;
-        taking: ShiftDetails;
-        status: RequestStatus;
-        managerStatus?: RequestStatus;
+        requestorId: number;
+        requestedUserId: number;
+        requestedApproval: DecisionStatus;
+        managerApproval: DecisionStatus | null;
     };
-    type CoverRequest = {
-        id: string;
-        requesterName: string;
-        role: string;
-        shift: ShiftDetails;
-        status: RequestStatus;
-        managerStatus?: RequestStatus;
+    type TradeReq = BaseReq & {
+        kind: "trade";
+        from: { name: string; date: string; start: string; end: string };
+        to: { name: string; date: string; start: string; end: string };
     };
-    type OutgoingTradeRequest = TradeRequest & { managerStatus: RequestStatus };
-    type OutgoingCoverRequest = CoverRequest & { managerStatus: RequestStatus };
+    type TimeOffReq = BaseReq & {
+        kind: "timeoff";
+        requesterNames: string[];
+        dateRange: { start: string; end: string };
+    };
+    type AnyRequest = TradeReq | TimeOffReq;
 
-    const [tradeRequests, setTradeRequests] = useState<TradeRequest[]>([
-        {
-            id: "t1",
-            requesterName: "Alex Johnson",
-            requestedWithName: "You",
-            giving: {
-                date: "Dec 5, 2025",
-                time: "9:00 AM - 5:00 PM",
-                role: "Front Desk",
-            },
-            taking: {
-                date: "Dec 12, 2025",
-                time: "9:00 AM - 5:00 PM",
-                role: "Front Desk",
-            },
-            status: "pending",
-        },
-        {
-            id: "t2",
-            requesterName: "Morgan Lee",
-            requestedWithName: "You",
-            giving: {
-                date: "Dec 7, 2025",
-                time: "10:00 AM - 6:00 PM",
-                role: "Vet Tech",
-            },
-            taking: {
-                date: "Dec 14, 2025",
-                time: "10:00 AM - 6:00 PM",
-                role: "Vet Tech",
-            },
-            status: "approved",
-            managerStatus: "pending",
-        },
-    ]);
+	const { getToken } = useAuth();
+	const { user } = useUser();
+	const { id } = useParams<{ id: string }>();
+	const apiClient = useMemo(
+		() =>
+			createApiClient({
+				baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000",
+				getToken,
+			}),
+		[getToken]
+	);
 
-    const [coverRequests, setCoverRequests] = useState<CoverRequest[]>([
-        {
-            id: "c1",
-            requesterName: "Jamie Rivera",
-            role: "Front Desk",
-            shift: {
-                date: "Dec 6, 2025",
-                time: "12:00 PM - 8:00 PM",
-                role: "Front Desk",
-            },
-            status: "pending",
-        },
-        {
-            id: "c2",
-            requesterName: "Taylor Smith",
-            role: "Vet Tech",
-            shift: {
-                date: "Dec 9, 2025",
-                time: "7:00 AM - 3:00 PM",
-                role: "Vet Tech",
-            },
-            status: "rejected",
-        },
-    ]);
+    const [incoming, setIncoming] = useState<AnyRequest[]>([]);
+    const [outgoing, setOutgoing] = useState<AnyRequest[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+	const [dialogOpen, setDialogOpen] = useState(false);
+	const [newStartDate, setNewStartDate] = useState<string>("");
+	const [newEndDate, setNewEndDate] = useState<string>("");
 
-    const setStatusBadge = (status: RequestStatus) => {
+    function badge(status: DecisionStatus) {
         if (status === "approved") return <Badge variant="secondary">Approved</Badge>;
-        if (status === "rejected") return <Badge variant="destructive">Rejected</Badge>;
+        if (status === "denied") return <Badge variant="destructive">Denied</Badge>;
         return <Badge variant="outline">Pending</Badge>;
-    };
-    const setManagerBadge = (status: RequestStatus) => {
-        if (status === "approved") return <Badge variant="secondary">Approved</Badge>;
-        if (status === "rejected") return <Badge variant="destructive">Rejected</Badge>;
-        return <Badge variant="outline">Pending</Badge>;
-    };
+    }
 
-    const [outgoingTradeRequests] = useState<OutgoingTradeRequest[]>([
-        {
-            id: "ot1",
-            requesterName: "You",
-            requestedWithName: "Alex Johnson",
-            giving: {
-                date: "Dec 11, 2025",
-                time: "9:00 AM - 5:00 PM",
-                role: "Front Desk",
-            },
-            taking: {
-                date: "Dec 18, 2025",
-                time: "9:00 AM - 5:00 PM",
-                role: "Front Desk",
-            },
-            status: "pending",
-            managerStatus: "pending",
-        },
-        {
-            id: "ot2",
-            requesterName: "You",
-            requestedWithName: "Morgan Lee",
-            giving: {
-                date: "Dec 12, 2025",
-                time: "10:00 AM - 6:00 PM",
-                role: "Vet Tech",
-            },
-            taking: {
-                date: "Dec 19, 2025",
-                time: "10:00 AM - 6:00 PM",
-                role: "Vet Tech",
-            },
-            status: "approved",
-            managerStatus: "approved",
-        },
-    ]);
-    const [outgoingCoverRequests] = useState<OutgoingCoverRequest[]>([
-        {
-            id: "oc1",
-            requesterName: "You",
-            role: "Front Desk",
-            shift: {
-                date: "Dec 10, 2025",
-                time: "12:00 PM - 8:00 PM",
-                role: "Front Desk",
-            },
-            status: "pending",
-            managerStatus: "pending",
-        },
-        {
-            id: "oc2",
-            requesterName: "You",
-            role: "Vet Tech",
-            shift: {
-                date: "Dec 15, 2025",
-                time: "7:00 AM - 3:00 PM",
-                role: "Vet Tech",
-            },
-            status: "approved",
-            managerStatus: "rejected",
-        },
-    ]);
+    useEffect(() => {
+		let alive = true;
+		(async () => {
+			try {
+				setLoading(true);
+				setError(null);
+				// Resolve current user's numeric id within the workspace via email
+				const membersResp = await apiClient.getWorkspaceMembers(id);
+				const members: { id: string; email: string }[] = membersResp.members ?? [];
+				const myEmail =
+					user?.primaryEmailAddress?.emailAddress ??
+					user?.emailAddresses?.[0]?.emailAddress ??
+					"";
+				const me =
+					members.find(
+						(m) =>
+							m.email.toLowerCase() === (myEmail || "").toLowerCase()
+					) ?? members[0];
+				if (!me) {
+					throw new Error("No workspace membership found for current user");
+				}
+				const userId = Number(me.id);
+				const [incomingRes, outgoingRes] = await Promise.all([
+					apiClient.getIncomingShiftRequestsByUser(id, userId),
+					apiClient.getOutgoingShiftRequestsByUser(id, userId),
+				]);
+				if (!alive) return;
+				setIncoming((incomingRes?.requests ?? []) as AnyRequest[]);
+				setOutgoing((outgoingRes?.requests ?? []) as AnyRequest[]);
+			} catch (e: any) {
+				if (!alive) return;
+				setError(e?.message ?? "Failed to load requests");
+			} finally {
+				if (!alive) return;
+				setLoading(false);
+			}
+		})();
+		return () => {
+			alive = false;
+		};
+	}, [id, apiClient, user?.primaryEmailAddress?.emailAddress]);
 
-    const approveTrade = (id: string) => {
-        setTradeRequests((prev) =>
+    async function approve(idStr: string) {
+		await apiClient.approveShiftRequest(id, idStr);
+		setIncoming((prev) =>
             prev.map((r) =>
-                r.id === id ? { ...r, status: "approved", managerStatus: "pending" } : r
+                r.id === idStr ? { ...r, requestedApproval: "approved", managerApproval: r.managerApproval ?? "pending" } : r
             )
         );
-    };
-    const rejectTrade = (id: string) => {
-        setTradeRequests((prev) =>
-            prev.map((r) => (r.id === id ? { ...r, status: "rejected" } : r))
+    }
+    async function reject(idStr: string) {
+		await apiClient.rejectShiftRequest(id, idStr);
+		setIncoming((prev) =>
+            prev.map((r) => (r.id === idStr ? { ...r, requestedApproval: "denied" } : r))
         );
-    };
-    const approveCover = (id: string) => {
-        setCoverRequests((prev) =>
-            prev.map((r) =>
-                r.id === id ? { ...r, status: "approved", managerStatus: "pending" } : r
-            )
-        );
-    };
-    const rejectCover = (id: string) => {
-        setCoverRequests((prev) =>
-            prev.map((r) => (r.id === id ? { ...r, status: "rejected" } : r))
-        );
-    };
+    }
 
     return (
         <main className="mt-4">
             <div className="w-full flex justify-end px-4">
-                <Dialog>
+				<Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                     <DialogTrigger asChild>
-                        <Button className="flex items-center gap-2 text-white">
+						<Button className="flex items-center gap-2 text-white" onClick={() => setDialogOpen(true)}>
                             <Plus />
                             New Request
                         </Button>
                     </DialogTrigger>
                     <DialogContent>
                         <DialogHeader>
-                            <DialogTitle>Create a new request</DialogTitle>
+							<DialogTitle>Create a shift request</DialogTitle>
                             <DialogDescription>
-                                Select a request type. Options coming soon.
+								Request coverage for a single day or a date range.
                             </DialogDescription>
                         </DialogHeader>
-                        <div className="flex gap-2">
-                            <Button disabled>Shift Request</Button>
-                            <Button variant="outline" disabled>Meeting Request</Button>
-                        </div>
+						<form
+							className="space-y-4"
+							onSubmit={(e) => {
+								e.preventDefault();
+								if (!newStartDate) return;
+								const start = newStartDate;
+								const end = newEndDate || newStartDate;
+								const startTime = new Date(start).getTime();
+								const endTime = new Date(end).getTime();
+								const normalized = startTime <= endTime ? { start, end } : { start: end, end: start };
+								const newReq: TimeOffReq = {
+									id: `out-${Date.now()}`,
+									kind: "timeoff",
+									requestorId: 1,
+									requestedUserId: 0,
+									requestedApproval: "pending",
+									managerApproval: null,
+									requesterNames: ["You"],
+									dateRange: normalized,
+								};
+								setOutgoing((prev) => [newReq, ...prev]);
+								setDialogOpen(false);
+								setNewStartDate("");
+								setNewEndDate("");
+							}}
+						>
+							<div className="grid gap-2">
+								<Label htmlFor="start-date">Start date</Label>
+								<Input
+									id="start-date"
+									type="date"
+									value={newStartDate}
+									onChange={(e) => setNewStartDate(e.target.value)}
+									required
+								/>
+							</div>
+							<div className="grid gap-2">
+								<Label htmlFor="end-date">End date (optional)</Label>
+								<Input
+									id="end-date"
+									type="date"
+									value={newEndDate}
+									onChange={(e) => setNewEndDate(e.target.value)}
+									min={newStartDate || undefined}
+								/>
+							</div>
+							<DialogFooter>
+								<Button
+									type="button"
+									variant="outline"
+									onClick={() => {
+										setDialogOpen(false);
+										setNewStartDate("");
+										setNewEndDate("");
+									}}
+								>
+									Cancel
+								</Button>
+								<Button type="submit" disabled={!newStartDate}>
+									Create
+								</Button>
+							</DialogFooter>
+						</form>
                     </DialogContent>
                 </Dialog>
             </div>
@@ -236,108 +217,70 @@ export default function Page() {
                 <TabsContent className="w-full flex justify-center" value="incoming-requests">
 
                     <div className="w-1/2 space-y-4">
-                        {tradeRequests.map((req) => (
+                        {loading && <div className="text-sm text-gray-500">Loading…</div>}
+                        {error && (
+                            <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+                                Error: {error}
+                            </div>
+                        )}
+                        {incoming.map((req) => (
                             <Card key={req.id} className="hover:bg-gray-50 hover:cursor-pointer">
                                 <CardHeader className="flex items-center justify-between">
                                     <CardTitle className="font-semibold">
-                                        Shift Trade: {req.requesterName} ↔ {req.requestedWithName}
+                                        {req.kind === "trade"
+                                            ? `Shift Trade: ${req.from.name} ↔ ${req.to.name}`
+                                            : `Cover Request: ${req.requesterNames.join(", ")}`}
                                     </CardTitle>
                                     <div className="flex items-center gap-3">
-                                        {setStatusBadge(req.status)}
-                                        {req.status === "approved" && req.managerStatus && (
+                                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                            <span>You:</span>
+                                            {badge(req.requestedApproval)}
+                                        </div>
+                                        {req.requestedApproval === "approved" && req.managerApproval && (
                                             <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                                 <span>Manager:</span>
-                                                {setManagerBadge(req.managerStatus)}
+                                                {badge(req.managerApproval)}
                                             </div>
                                         )}
                                     </div>
                                 </CardHeader>
                                 <CardContent className="space-y-3">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="rounded-md border p-3">
-                                            <div className="text-sm font-medium">Giving</div>
-                                            <div className="text-sm text-muted-foreground">
-                                                {req.giving.date} • {req.giving.time}
-                                            </div>
-                                            {req.giving.role && (
-                                                <div className="text-xs text-muted-foreground">
-                                                    Role: {req.giving.role}
+                                    {req.kind === "trade" ? (
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="rounded-md border p-3">
+                                                <div className="text-sm font-medium">Giving</div>
+                                                <div className="text-sm text-muted-foreground">
+                                                    {req.from.date} • {req.from.start}-{req.from.end}
                                                 </div>
-                                            )}
-                                        </div>
-                                        <div className="rounded-md border p-3">
-                                            <div className="text-sm font-medium">Taking</div>
-                                            <div className="text-sm text-muted-foreground">
-                                                {req.taking.date} • {req.taking.time}
                                             </div>
-                                            {req.taking.role && (
-                                                <div className="text-xs text-muted-foreground">
-                                                    Role: {req.taking.role}
+                                            <div className="rounded-md border p-3">
+                                                <div className="text-sm font-medium">Taking</div>
+                                                <div className="text-sm text-muted-foreground">
+                                                    {req.to.date} • {req.to.start}-{req.to.end}
                                                 </div>
-                                            )}
+                                            </div>
                                         </div>
-                                    </div>
+                                    ) : (
+                                        <div className="rounded-md border p-3">
+                                            <div className="text-sm font-medium">Shift</div>
+                                            <div className="text-sm text-muted-foreground">
+                                                {new Date(req.dateRange.start).toLocaleDateString()} • {new Date(req.dateRange.end).toLocaleDateString()}
+                                            </div>
+                                        </div>
+                                    )}
                                     <div className="flex items-center gap-2">
                                         <Button
                                             size="sm"
-                                            onClick={() => approveTrade(req.id)}
-                                            disabled={req.status !== "pending"}
+                                            onClick={() => approve(req.id)}
+                                            disabled={req.requestedApproval !== "pending"}
                                         >
                                             Approve
                                         </Button>
                                         <Button
                                             size="sm"
                                             variant="outline"
-                                            onClick={() => rejectTrade(req.id)}
-                                            disabled={req.status !== "pending"}
-                                        >
-                                            Reject
-                                        </Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                        {coverRequests.map((req) => (
-                            <Card key={req.id} className="hover:bg-gray-50 hover:cursor-pointer">
-                                <CardHeader className="flex items-center justify-between">
-                                    <CardTitle className="font-semibold">
-                                        Cover Request: {req.requesterName} • {req.role}
-                                    </CardTitle>
-                                    <div className="flex items-center gap-3">
-                                        {setStatusBadge(req.status)}
-                                        {req.status === "approved" && req.managerStatus && (
-                                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                                <span>Manager:</span>
-                                                {setManagerBadge(req.managerStatus)}
-                                            </div>
-                                        )}
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="space-y-3">
-                                    <div className="rounded-md border p-3">
-                                        <div className="text-sm font-medium">Shift</div>
-                                        <div className="text-sm text-muted-foreground">
-                                            {req.shift.date} • {req.shift.time}
-                                        </div>
-                                        {req.shift.role && (
-                                            <div className="text-xs text-muted-foreground">
-                                                Role: {req.shift.role}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Button
-                                            size="sm"
-                                            onClick={() => approveCover(req.id)}
-                                            disabled={req.status !== "pending"}
-                                        >
-                                            Approve
-                                        </Button>
-                                        <Button
-                                            size="sm"
-                                            variant="outline"
-                                            onClick={() => rejectCover(req.id)}
-                                            disabled={req.status !== "pending"}
+                                            onClick={() => reject(req.id)}
+                                            disabled={req.requestedApproval !== "pending"}
                                         >
                                             Reject
                                         </Button>
@@ -349,74 +292,49 @@ export default function Page() {
                 </TabsContent>
                 <TabsContent className="w-full flex justify-center" value="outgoing-requests">
                     <div className="w-1/2 space-y-4">
-                        {outgoingTradeRequests.map((req) => (
+                        {outgoing.map((req) => (
                             <Card key={req.id} className="hover:bg-gray-50 hover:cursor-pointer">
                                 <CardHeader className="flex items-center justify-between">
                                     <CardTitle className="font-semibold">
-                                        Shift Trade: {req.requesterName} ↔ {req.requestedWithName}
+                                        {req.kind === "trade"
+                                            ? `Shift Trade: ${req.from.name} ↔ ${req.to.name}`
+                                            : `Cover Request: ${req.requesterNames.join(", ")}`}
                                     </CardTitle>
                                     <div className="flex items-center gap-3">
-                                        {setStatusBadge(req.status)}
+                                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                            <span>You:</span>
+                                            {badge(req.requestedApproval)}
+                                        </div>
                                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                             <span>Manager:</span>
-                                            {setManagerBadge(req.managerStatus)}
+                                            {req.managerApproval ? badge(req.managerApproval) : <Badge variant="outline">Pending</Badge>}
                                         </div>
                                     </div>
                                 </CardHeader>
                                 <CardContent className="space-y-3">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="rounded-md border p-3">
-                                            <div className="text-sm font-medium">Giving</div>
-                                            <div className="text-sm text-muted-foreground">
-                                                {req.giving.date} • {req.giving.time}
-                                            </div>
-                                            {req.giving.role && (
-                                                <div className="text-xs text-muted-foreground">
-                                                    Role: {req.giving.role}
+                                    {req.kind === "trade" ? (
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="rounded-md border p-3">
+                                                <div className="text-sm font-medium">Giving</div>
+                                                <div className="text-sm text-muted-foreground">
+                                                    {req.from.date} • {req.from.start}-{req.from.end}
                                                 </div>
-                                            )}
-                                        </div>
-                                        <div className="rounded-md border p-3">
-                                            <div className="text-sm font-medium">Taking</div>
-                                            <div className="text-sm text-muted-foreground">
-                                                {req.taking.date} • {req.taking.time}
                                             </div>
-                                            {req.taking.role && (
-                                                <div className="text-xs text-muted-foreground">
-                                                    Role: {req.taking.role}
+                                            <div className="rounded-md border p-3">
+                                                <div className="text-sm font-medium">Taking</div>
+                                                <div className="text-sm text-muted-foreground">
+                                                    {req.to.date} • {req.to.start}-{req.to.end}
                                                 </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                        {outgoingCoverRequests.map((req) => (
-                            <Card key={req.id} className="hover:bg-gray-50 hover:cursor-pointer">
-                                <CardHeader className="flex items-center justify-between">
-                                    <CardTitle className="font-semibold">
-                                        Cover Request: {req.requesterName} • {req.role}
-                                    </CardTitle>
-                                    <div className="flex items-center gap-3">
-                                        {setStatusBadge(req.status)}
-                                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                            <span>Manager:</span>
-                                            {setManagerBadge(req.managerStatus)}
-                                        </div>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="space-y-3">
-                                    <div className="rounded-md border p-3">
-                                        <div className="text-sm font-medium">Shift</div>
-                                        <div className="text-sm text-muted-foreground">
-                                            {req.shift.date} • {req.shift.time}
-                                        </div>
-                                        {req.shift.role && (
-                                            <div className="text-xs text-muted-foreground">
-                                                Role: {req.shift.role}
                                             </div>
-                                        )}
-                                    </div>
+                                        </div>
+                                    ) : (
+                                        <div className="rounded-md border p-3">
+                                            <div className="text-sm font-medium">Shift</div>
+                                            <div className="text-sm text-muted-foreground">
+                                                {new Date(req.dateRange.start).toLocaleDateString()} • {new Date(req.dateRange.end).toLocaleDateString()}
+                                            </div>
+                                        </div>
+                                    )}
                                 </CardContent>
                             </Card>
                         ))}
