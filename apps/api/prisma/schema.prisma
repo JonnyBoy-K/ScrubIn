@@ -16,13 +16,10 @@ model User {
   createdAt               DateTime                  @default(now())
   updatedAt               DateTime                  @updatedAt
   Shift                   Shift[]
-<<<<<<< HEAD
   UserRoleMembership      UserRoleMembership[]
   UserWorkspaceMembership UserWorkspaceMembership[]
   ShiftRequests           ShiftRequest[]            @relation("RequestorRelation")
-=======
   timeOffRequests         TimeOffRequest[]
->>>>>>> 7d162d5276cb9bd4dfa4401bccb3fba1a84d298c
 }
 
 model UserWorkspaceMembership {
@@ -41,12 +38,9 @@ model Workspace {
   adminId         Int
   location        String
   roleMemberships UserRoleMembership[]
-<<<<<<< HEAD
   memberships     UserWorkspaceMembership[]
   shiftRequests   ShiftRequest[]
-=======
   timeOffRequests TimeOffRequest[]
->>>>>>> 7d162d5276cb9bd4dfa4401bccb3fba1a84d298c
 }
 
 model Shift {
