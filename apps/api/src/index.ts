@@ -28,6 +28,7 @@ app.use(express.json())
 app.use(morgan('dev'))
 app.use(clerkMiddleware())
 
+
 app.use('/users', usersRouter)
 app.use('/workspaces', workspacesRouter)
 app.use('/permissions', permissionsRouter)
@@ -53,9 +54,9 @@ app.post('/clerk/webhook', async (req, res) => {
     if (evt.type === 'user.created') {
         await prisma.user.create({
             data: {
+                id,
                 firstName: first_name || null,
                 lastName: last_name || null,
-                clerkId: id,
             },
         })
     }
