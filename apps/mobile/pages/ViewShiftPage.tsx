@@ -1,57 +1,28 @@
-import React from 'react';
-import { Dimensions } from 'react-native';
-import { useState } from 'react';
+import React, { use } from 'react';
+import { Dimensions, experimental_LayoutConformance } from 'react-native';
+import { useState, useEffect } from 'react';
 import { View, Text, Button, StyleSheet, ScrollView, Image, TouchableOpacity} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '@clerk/clerk-expo';
+import { useApiClient, Shift } from '@/api/client';
 
 const months = [ 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December' ];
 const { height } = Dimensions.get('window');
 
-type Shift = {
+type FormattedShift = {
   day: string;
   role: string;
   tag: string;
   time: string;
   location: string;
+  date: Date;
 };
 type WeekData = {
   week: string;
-  shifts: Shift[];
-};
-// generated using ai
-const dummyShifts: Record<string, WeekData[]> = {
-  October: [
-    {
-      week: 'Week 1',
-      shifts: [
-        { day: 'Monday', role: 'Vet Tech', tag: 'Morning', time: '8am - 4pm', location: '3315 Fairlight Drive' },
-        { day: 'Wednesday', role: 'Groomer', tag: 'Stay Late', time: '10am - 8pm', location: 'Circle Drive South' },
-      ]
-    },
-    {
-      week: 'Week 2',
-      shifts: [
-        { day: 'Tuesday', role: 'Assistant', tag: 'Morning', time: '9am - 5pm', location: '22nd Street' },
-        { day: 'Friday', role: 'Vet Tech', tag: 'Stay Late', time: '11am - 9pm', location: 'Confederation Drive' },
-      ]
-    },
-    {
-      week: 'Week 3',
-      shifts: [
-        { day: 'Monday', role: 'Vet Tech', tag: 'Morning', time: '8am - 4pm', location: '8th Street' },
-        { day: 'Thursday', role: 'Receptionist', tag: 'Afternoon', time: '12pm - 8pm', location: 'Fairhaven Blvd' },
-      ]
-    },
-    {
-      week: 'Week 4',
-      shifts: [
-        { day: 'Wednesday', role: 'Groomer', tag: 'Morning', time: '8am - 2pm', location: 'Stonebridge Blvd' },
-      ]
-    }
-  ],
+  shifts: FormattedShift[];
 };
 
-const ShiftCard = ({ shift }: { shift: any }) => (
+const ShiftCard = ({ shift }: { shift: FormattedShift }) => (
   <View style={styles.shiftContainer}>
     <Image style={{height: 40, width: 40, borderRadius: '50%'}} source={require('assets/example-vet.png')}/>
     <View style={styles.shiftTextContainer}>
@@ -78,17 +49,146 @@ const ShiftCard = ({ shift }: { shift: any }) => (
   </View>
 );
 
+// format shift time to "hh:mm am/pm - hh:mm am/pm"
+const formatShiftTime = (startTime: string, endTime: string): string => {
+  const start = new Date(startTime);
+  const end = new Date(endTime);
+
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    }).toLowerCase();
+  };
+  return `${formatTime(start)} - ${formatTime(end)}`;
+};
+
+// get the shift tag given the shift start time
+const getShiftTag = (startTime: string): string => {
+  const hour = new Date(startTime).getHours();
+  if (hour < 12) return 'Morning';
+  if (hour < 17) return 'Afternoon';
+  return 'Evening';
+}
+
+// format the shift data into month -> week -> shifts structure
+const formatShiftData = (shifts: Shift[]): Record<string, WeekData[]> => {
+  const formattedData: Record<string, WeekData[]> = {};
+
+  shifts.forEach(shift => {
+    const date = new Date(shift.startTime);
+    const month = months[date.getMonth()];
+    const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+    const weekNumber = Math.ceil(date.getDate() / 7);
+    const weekKey = `Week ${weekNumber}`;
+
+    if (!formattedData[month]) {
+      formattedData[month] = [];
+    }
+
+    let weekData = formattedData[month].find(week => week.week === weekKey);
+    if (!weekData) {
+      weekData = { week: weekKey, shifts: [] };
+      formattedData[month].push(weekData);
+    }
+
+    const formattedShift: FormattedShift = {
+      day: dayName,
+      role: 'Vet Tech', // Placeholder
+      tag: getShiftTag(shift.startTime),
+      time: formatShiftTime(shift.startTime, shift.endTime),
+      location: shift.workspace ? shift.workspace.location : 'Unknown Location',
+      date: date
+    };
+
+    weekData.shifts.push(formattedShift);
+  });
+
+  // sort weeks and shifts within each month
+  Object.keys(formattedData).forEach(month => {
+    formattedData[month].sort((a, b) => {
+      const weekA = parseInt(a.week.replace('Week ', ''));
+      const weekB = parseInt(b.week.replace('Week ', ''));
+      return weekA - weekB;
+    });
+
+    formattedData[month].forEach(week => {
+      week.shifts.sort((a, b) => a.date.getTime() - b.date.getTime());
+    });
+  });
+
+  return formattedData;
+}
+
+// get the start and end date of a month
+const getMonthDateRange = (month: string, year: number = new Date().getFullYear()) => {
+  const monthIndex = months.indexOf(month);
+  const startDate = new Date(year, monthIndex, 1);
+  const endDate = new Date(year, monthIndex + 1, 0);
+  return { startDate, endDate };
+}
+
 export default function ViewShiftPage() {
-  const [selectedMonth, setSelectedMonth] = useState<string>('October');
+  const [selectedMonth, setSelectedMonth] = useState<string>(months[new Date().getMonth()]);
+  const [shiftsData, setShiftsDate] = useState<Record<string, WeekData[]>>({});
+  const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+
+  const apiClient = useApiClient();
+  const { getToken, userId: clerkUserId } = useAuth();
+
+  useEffect(() => {
+    fetchCurrentUser();
+  }, []);
+
+  useEffect(() => {
+    if (currentUserId) {
+      fetchShiftsForMonth(selectedMonth);
+    }
+  }, [selectedMonth, currentUserId]);
+
+  // fetch the current authenticated user
+  const fetchCurrentUser = async () => {
+    try {
+      const user = await apiClient.getCurrentUser();
+      setCurrentUserId(user.id);
+    } catch (error) {
+      console.error('Error fetching current user:', error);
+    }
+  };
+
+  // fetch shifts for the selected month
+  const fetchShiftsForMonth = async (month: string) => {
+    if (!currentUserId) return;
+
+    try {
+      setLoading(true);
+      const { startDate, endDate } = getMonthDateRange(month);
+
+      const shifts = await apiClient.getUserShifts(currentUserId, startDate, endDate);
+      const formattedData = formatShiftData(shifts);
+      setShiftsDate(formattedData);
+    } catch (error) {
+      console.error('Error fetching shifts:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // handle the next and previous month navigation
   const handleNext = () => {
-    const nextIndex = (months.indexOf(selectedMonth) + 1) % months.length;
+    const currentIndex = months.indexOf(selectedMonth);
+    const nextIndex = (currentIndex + 1) % months.length;
     setSelectedMonth(months[nextIndex]);
   };
   const handlePrev = () => {
-    const prevIndex = (months.indexOf(selectedMonth) - 1 + months.length) % months.length;
+    const currentIndex = months.indexOf(selectedMonth);
+    const prevIndex = (currentIndex - 1 + months.length) % months.length;
     setSelectedMonth(months[prevIndex]);
   }
-  const currentData = dummyShifts[selectedMonth] || [];
+
+  const currentData = shiftsData[selectedMonth] || [];
 
   return (
     <View style={styles.background}>
@@ -102,14 +202,20 @@ export default function ViewShiftPage() {
         </TouchableOpacity>
       </View>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        {currentData.map((weekData: any, index: number) => (
+        {currentData.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No shifts scheduled for {selectedMonth}</Text>
+          </View>
+        ) : (
+          currentData.map((weekData, index) => (
           <View key={index} style={styles.weekContainer}>
             <Text style={styles.weekTitle}>{weekData.week}</Text>
-            {weekData.shifts.map((shift: any, idx: number) => (
+            {weekData.shifts.map((shift, idx) => (
               <ShiftCard key={idx} shift={shift} />
             ))}
           </View>
-        ))}
+          ))
+        )}
       </ScrollView>
     </View>
   );
@@ -187,4 +293,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 3,
   },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 50,
+  },
+  emptyText: {
+    color: 'black',
+    fontSize: 16,
+    textAlign: 'center',
+  }
 });
