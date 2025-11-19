@@ -9,10 +9,9 @@ datasource db {
 }
 
 model User {
-  id                      Int                       @id @default(autoincrement())
+  id                      String                    @unique
   firstName               String?
   lastName                String?
-  clerkId                 String                    @unique
   createdAt               DateTime                  @default(now())
   updatedAt               DateTime                  @updatedAt
   UserWorkspaceMembership UserWorkspaceMembership[]
@@ -23,7 +22,7 @@ model User {
 
 model UserWorkspaceMembership {
   id          Int       @id @default(autoincrement())
-  userId      Int
+  userId      String
   workspaceId Int
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -47,7 +46,7 @@ model Shift {
   endTime        DateTime
   clockInTime    DateTime?
   clockOutTime   DateTime?
-  userId         Int
+  userId         String
   startBreakTime DateTime?
   endBreakTime   DateTime?
   breakDuration  Int
@@ -72,7 +71,7 @@ model Permissions {
 
 model UserRoleMembership {
   id          Int       @id @default(autoincrement())
-  userId      Int
+  userId      String
   workSpaceId Int
   roleId      Int
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -111,7 +110,7 @@ model Meeting {
 
 model TimeOffRequest {
   id          Int       @id @default(autoincrement())
-  userId      Int
+  userId      String
   workspaceId Int
   startDate   DateTime
   endDate     DateTime
