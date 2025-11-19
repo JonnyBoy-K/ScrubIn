@@ -24,7 +24,6 @@ export async function listMembers(req: Request, res: Response) {
           id: true,
           firstName: true,
           lastName: true,
-          clerkId: true,
           UserRoleMembership: {
             where: { workSpaceId: workspaceId },
             select: { role: { select: { name: true } } },
@@ -40,10 +39,10 @@ export async function listMembers(req: Request, res: Response) {
     rows.map(async ({ user }) => {
       const firstRole = user.UserRoleMembership[0]?.role?.name ?? "Member";
 
-      let cu = cache.get(user.clerkId);
+      let cu = cache.get(user.id);
       if (!cu) {
-        cu = await clerk.users.getUser(user.clerkId);
-        cache.set(user.clerkId, cu);
+        cu = await clerk.users.getUser(user.id);
+        cache.set(user.id, cu);
       }
       const email =
         cu.primaryEmailAddress?.emailAddress ??
@@ -70,7 +69,7 @@ export async function listMembers(req: Request, res: Response) {
 
 export async function removeMember(req: Request, res: Response) {
   const workspaceId = Number(req.params.workspaceId ?? req.params.id);
-  const userId = Number(req.params.userId);
+  const userId = String(req.params.userId);
 
   await prisma.userWorkspaceMembership.deleteMany({
     where: { workspaceId, userId },

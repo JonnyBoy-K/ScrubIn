@@ -79,7 +79,7 @@ router.post('/', async (req, res) => {
 
 	const user = await prisma.user.findFirst({
 		where: {
-			clerkId: userId || undefined,
+			id: userId || undefined,
 		},
 	});
 
@@ -135,7 +135,7 @@ router.post('/:id/accept', async (req, res) => {
 
 	const membership = await prisma.userWorkspaceMembership.create({
 		data: {
-			user: { connect: { clerkId: userId } },
+			user: { connect: { id: userId } },
 			workspace: { connect: { id: invitation.workspaceId } },
 		},
 	});

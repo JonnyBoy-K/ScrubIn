@@ -6,29 +6,28 @@ const router = express.Router({ mergeParams: true });
 
 router.get('/', listMembers);
 
-// gets shift for a user in a workspace
+// gets shifts for a user in a workspace
+// Note: :userId here is the Clerk userId (which is now the user.id)
 router.get('/:userId/shifts', async (req, res) => {
-	// DONE: Implement get user shifts
 	try {
-		const workspaceId = Number(req.params.workspaceId);
-		const userId = Number(req.params.userId);
+		const workspaceId = Number((req.params as any).workspaceId);
+		const clerkId = String(req.params.userId);
 
-		// check for validity
-		if (!Number.isInteger(workspaceId) || !Number.isInteger(userId)) {
+		if (!workspaceId || Number.isNaN(workspaceId) || !clerkId) {
 			return res.status(400).json({ error: 'Invalid workspaceId or userId' });
 		}
 
+		const user = await prisma.user.findUnique({ where: { id: clerkId } });
+		if (!user) return res.status(404).json({ error: 'User not found' });
+
 		const shifts = await prisma.shift.findMany({
-			where: {
-				workspaceId,
-				userId
-			},
-			orderBy: {
-				startTime: 'asc'
-			}
+			where: { workspaceId, userId: user.id },
+			orderBy: { startTime: 'asc' }
 		});
-		return res.status(200).json({shifts});
+
+		return res.status(200).json({ shifts });
 	} catch (error) {
+		// eslint-disable-next-line no-console
 		console.error('Error fetching user shifts:', error);
 		return res.status(500).json({ error: 'Internal server error' });
 	}
@@ -90,12 +89,16 @@ function fullName(user: { firstName: string | null; lastName: string | null } | 
 router.get('/:userId/shift-requests', async (req, res) => {
 	try {
 		const workspaceId = Number((req.params as any).workspaceId);
-		const userId = Number(req.params.userId);
+		const userId = String(req.params.userId);
 		const direction = (req.query.direction as string | undefined)?.toLowerCase();
 
-		if (!workspaceId || Number.isNaN(workspaceId) || !userId || Number.isNaN(userId)) {
+		if (!workspaceId || Number.isNaN(workspaceId) || !userId) {
 			return res.status(400).json({ error: 'Invalid workspace or user id' });
 		}
+
+		// userId is the Clerk ID (which is now the user.id)
+		const user = await prisma.user.findUnique({ where: { id: userId } });
+		if (!user) return res.status(404).json({ error: 'User not found' });
 
 		// Build where clause
 		let where: any = { workspaceId };
