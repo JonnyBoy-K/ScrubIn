@@ -13,6 +13,7 @@ import {
 import {
   CalendarDays,
   ArrowLeftRight,
+  ArrowRight,
   Check,
   X,
 } from "lucide-react";
@@ -44,7 +45,13 @@ type TradeRequest = RequestBase & {
   to: { name: string; date: string; start: string; end: string };
 };
 
-type AnyRequest = TimeOffRequest | TradeRequest;
+type CoverRequest = RequestBase & {
+  kind: "cover";
+  from: { name: string; date: string; start: string; end: string };
+  coverer: { name: string };
+};
+
+type AnyRequest = TimeOffRequest | TradeRequest | CoverRequest;
 
 /**** Component ****/
 
@@ -78,7 +85,7 @@ export default function ShiftRequestsPage() {
         Authorization: `Bearer ${token}`,
       };
 
-      // Fetch trade requests (shift-requests) and time off requests in parallel
+        // Fetch trade/cover requests and time off requests in parallel
       const [tradeRes, timeoffRes] = await Promise.all([
         fetch(`${API}/workspaces/${id}/shift-requests?status=pending`, {
           headers,
@@ -150,7 +157,7 @@ export default function ShiftRequestsPage() {
 
     try {
       const token = await getToken();
-     const path = confirm.action === "approve" ? "approve" : "reject";
+      const path = confirm.action === "approve" ? "approve" : "reject";
       const baseRoute =
         selected.kind === "timeoff" ? "timeoff-requests" : "shift-requests";
 
@@ -196,7 +203,7 @@ export default function ShiftRequestsPage() {
 
   // Helpers
   function fmtRange(range: { start: string; end: string }) {
-  return `${range.start} → ${range.end}`;
+    return `${range.start} → ${range.end}`;
 }
 
   function statusChip(status: RequestStatus) {
@@ -206,17 +213,31 @@ export default function ShiftRequestsPage() {
       denied: "bg-red-100 text-red-800",
     };
     return (
-      <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${map[status]}`}>
+      <span
+        className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${map[status]}`}
+      >
         {status}
       </span>
     );
   }
 
+  function kindLabel(kind: AnyRequest["kind"]) {
+    if (kind === "timeoff") return "Time Off Request";
+    if (kind === "trade") return "Trade Request";
+    return "Cover Request";
+  }
+
+  function kindIcon(kind: AnyRequest["kind"]) {
+    if (kind === "timeoff") return <CalendarDays size={18} />;
+    if (kind === "trade") return <ArrowLeftRight size={18} />;
+    return <ArrowRight size={18} />;
+  }
+
   return (
     <div className="flex min-h-[640px]">
       {/* Left pane: request list */}
-      <aside className="w-1/2  p-4">
-        <h2 className="mb-3 text-lg font-semibold text-gray-800">Requests</h2>  
+      <aside className="w-1/2 p-4">
+        <h2 className="mb-3 text-lg font-semibold text-gray-800">Requests</h2>
         {loading && (
           <div className="mb-3 text-sm text-gray-500">Loading requests…</div>
         )}
@@ -236,7 +257,9 @@ export default function ShiftRequestsPage() {
               const isSelected = req.id === selectedId;
               const baseCard =
                 "cursor-pointer rounded-xl border p-3 transition-shadow hover:shadow-sm";
-              const selectedRing = isSelected ? "border-gray-900 shadow-sm" : "border-gray-200";
+              const selectedRing = isSelected
+                ? "border-gray-900 shadow-sm"
+                : "border-gray-200";
 
               return (
                 <div
@@ -248,15 +271,11 @@ export default function ShiftRequestsPage() {
                     {/* Left: icon + title */}
                     <div className="flex items-center gap-2">
                       <div className="rounded-full bg-gray-100 p-2">
-                        {req.kind === "timeoff" ? (
-                          <CalendarDays size={18} />
-                        ) : (
-                          <ArrowLeftRight size={18} />
-                        )}
+                        {kindIcon(req.kind)}
                       </div>
 
                       <div className="flex flex-col">
-                        {req.kind === "timeoff" ? (
+                        {req.kind === "timeoff" && (
                           <>
                             <div className="text-sm font-medium text-gray-900">
                               {req.requesterNames.join(", ")}
@@ -265,13 +284,26 @@ export default function ShiftRequestsPage() {
                               Time off · {fmtRange(req.dateRange)}
                             </div>
                           </>
-                        ) : (
+                        )}
+
+                        {req.kind === "trade" && (
                           <>
                             <div className="text-sm font-medium text-gray-900">
                               Trade: {req.from.name} ↔ {req.to.name}
                             </div>
                             <div className="text-xs text-gray-600">
                               {req.from.date} ↔ {req.to.date}
+                            </div>
+                          </>
+                        )}
+
+                        {req.kind === "cover" && (
+                          <>
+                            <div className="text-sm font-medium text-gray-900">
+                              Cover: {req.from.name} → {req.coverer.name}
+                            </div>
+                            <div className="text-xs text-gray-600">
+                              {req.from.date} ({req.from.start}-{req.from.end})
                             </div>
                           </>
                         )}
@@ -301,21 +333,17 @@ export default function ShiftRequestsPage() {
             <div className="mb-2 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="rounded-full bg-gray-100 p-2">
-                  {selected.kind === "timeoff" ? (
-                    <CalendarDays size={18} />
-                  ) : (
-                    <ArrowLeftRight size={18} />
-                  )}
+                  {kindIcon(selected.kind)}
                 </div>
                 <div className="text-sm font-semibold text-gray-800">
-                  {selected.kind === "timeoff" ? "Time Off Request" : "Trade Request"}
+                  {kindLabel(selected.kind)}
                 </div>
               </div>
               {statusChip(selected.status)}
             </div>
 
             {/* Body */}
-            {selected.kind === "timeoff" ? (
+            {selected.kind === "timeoff" && (
               <div className="space-y-2">
                 <div className="text-base font-semibold text-gray-900">
                   {selected.requesterNames.join(", ")}
@@ -324,16 +352,41 @@ export default function ShiftRequestsPage() {
                   Date range: {fmtRange(selected.dateRange)}
                 </div>
                 {selected.reason ? (
-                  <div className="text-sm text-gray-700">Reason: {selected.reason}</div>
+                  <div className="text-sm text-gray-700">
+                    Reason: {selected.reason}
+                  </div>
                 ) : null}
               </div>
-            ) : (
+            )}
+
+            {selected.kind === "trade" && (
               <div className="space-y-3">
                 <div className="text-sm text-gray-700">
-                  <span className="font-semibold">{selected.from.name}</span> → {selected.from.date} ({selected.from.start}-{selected.from.end})
+                  <span className="font-semibold">{selected.from.name}</span> →{" "}
+                  {selected.from.date} ({selected.from.start}-
+                  {selected.from.end})
                 </div>
                 <div className="text-sm text-gray-700">
-                  <span className="font-semibold">{selected.to.name}</span> → {selected.to.date} ({selected.to.start}-{selected.to.end})
+                  <span className="font-semibold">{selected.to.name}</span> →{" "}
+                  {selected.to.date} ({selected.to.start}-{selected.to.end})
+                </div>
+              </div>
+            )}
+
+            {selected.kind === "cover" && (
+              <div className="space-y-3">
+                <div className="text-sm text-gray-700">
+                  <span className="font-semibold">Original owner:</span>{" "}
+                  {selected.from.name}
+                </div>
+                <div className="text-sm text-gray-700">
+                  <span className="font-semibold">Covering:</span>{" "}
+                  {selected.coverer.name}
+                </div>
+                <div className="text-sm text-gray-700">
+                  <span className="font-semibold">Shift:</span>{" "}
+                  {selected.from.date} ({selected.from.start}-
+                  {selected.from.end})
                 </div>
               </div>
             )}
@@ -363,11 +416,16 @@ export default function ShiftRequestsPage() {
       </section>
 
       {/* Confirmation dialog */}
-      <AlertDialog open={confirm.open} onOpenChange={(o) => !o && closeConfirm()}>
+      <AlertDialog
+        open={confirm.open}
+        onOpenChange={(o) => !o && closeConfirm()}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="font-bold">
-              {confirm.action === "approve" ? "Approve request?" : "Deny request?"}
+              {confirm.action === "approve"
+                ? "Approve request?"
+                : "Deny request?"}
             </AlertDialogTitle>
             <AlertDialogDescription className="text-gray-700">
               {confirm.action === "approve"
@@ -376,7 +434,12 @@ export default function ShiftRequestsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={closeConfirm} className="hover:bg-gray-300">Cancel</AlertDialogCancel>
+            <AlertDialogCancel
+              onClick={closeConfirm}
+              className="hover:bg-gray-300"
+            >
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={applyDecision}
               className={
@@ -386,7 +449,9 @@ export default function ShiftRequestsPage() {
               }
             >
               <span className="text-black">
-                {confirm.action === "approve" ? "Confirm approve" : "Confirm deny"}
+                {confirm.action === "approve"
+                  ? "Confirm approve"
+                  : "Confirm deny"}
               </span>
             </AlertDialogAction>
           </AlertDialogFooter>
