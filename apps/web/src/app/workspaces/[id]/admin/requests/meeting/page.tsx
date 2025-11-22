@@ -21,6 +21,7 @@ import {
   MapPin,
   Users,
 } from "lucide-react";
+import MeetingModal, { MeetingForModal } from "../../../../../../../components/MeetingModal";
 
 const API = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000";
 
@@ -32,13 +33,15 @@ type Meeting = {
   id: string;
   location: string;
   description: string;
-  date: string; // already formatted by backend ("Nov 21, 2025")
+  date: string;
   time: string;
   status: MeetingStatus;
+  inviteMembershipIds: number[];
+  createdById: string;
   attendees: {
-    yes: string[];     // names who voted yes
-    no: string[];      // names who voted no
-    pending: string[]; // names who haven't responded
+    yes: string[];
+    no: string[];
+    pending: string[];
   };
 };
 
@@ -87,6 +90,15 @@ export default function MeetingRequestsPage() {
     [meetings, selectedId]
   );
 
+  const [editorOpen, setEditorOpen] = React.useState(false);
+  const [editorMode, setEditorMode] = React.useState<"create" | "edit">("create");
+  const [editorMeeting, setEditorMeeting] = React.useState<MeetingForModal | null>(null);
+  
+  const [reloadToken, setReloadToken] = React.useState(0);
+  function refreshMeetings() {
+    setReloadToken((t) => t + 1);
+  }
+
   React.useEffect(() => {
     let alive = true;
 
@@ -113,17 +125,19 @@ export default function MeetingRequestsPage() {
         // Backend now returns:
         // { meetings: [{ id, location, description, date, time, status, attendees: { yes, no, pending } }, ...] }
         const mapped: Meeting[] = (data.meetings ?? []).map((m: any) => ({
-          id: String(m.id),
-          location: m.location ?? "No location",
-          description: m.description ?? "",
-          date: m.date ?? "",
-          time: m.time ?? "",
-          status: (m.status as MeetingStatus) ?? "PENDING",
-          attendees: {
-            yes: m.attendees?.yes ?? [],
-            no: m.attendees?.no ?? [],
-            pending: m.attendees?.pending ?? [],
-          },
+            id: String(m.id),
+            location: m.location ?? "No location",
+            description: m.description ?? "",
+            date: m.date ?? "",
+            time: m.time ?? "",
+            status: (m.status as MeetingStatus) ?? "PENDING",
+            inviteMembershipIds: m.inviteMembershipIds ?? [],
+            createdById: m.createdById ?? "",
+            attendees: {
+                yes: m.attendees?.yes ?? [],
+                no: m.attendees?.no ?? [],
+                pending: m.attendees?.pending ?? [],
+            },
         }));
 
         if (!alive) return;
@@ -141,7 +155,7 @@ export default function MeetingRequestsPage() {
     return () => {
       alive = false;
     };
-  }, [workspaceId, getToken]);
+  }, [workspaceId, getToken, reloadToken]);
 
   /***** Delete handlers *****/
 
@@ -253,12 +267,14 @@ export default function MeetingRequestsPage() {
           <button
             type="button"
             onClick={() => {
-              console.log("Open create meeting modal");
+                setEditorMode("create");
+                setEditorMeeting(null);
+                setEditorOpen(true);
             }}
             className="inline-flex items-center gap-2 rounded-lg px-4 py-2 bg-[#3F37C9] hover:bg-[#2E299A]"
-          >
+            >
             <Plus size={18} /> Create Meeting
-          </button>
+            </button>
         </div>
       </header>
 
@@ -457,12 +473,23 @@ export default function MeetingRequestsPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      console.log("Open reschedule meeting modal");
+                        if (!selected) return;
+                        setEditorMode("edit");
+                        setEditorMeeting({
+                        id: selected.id,
+                        location: selected.location,
+                        description: selected.description,
+                        date: selected.date,
+                        time: selected.time,
+                        inviteMembershipIds: selected.inviteMembershipIds,
+                        createdById: selected.createdById
+                        });
+                        setEditorOpen(true);
                     }}
                     className="inline-flex items-center gap-2 rounded-lg bg-purple-700 px-4 py-2 text-sm font-medium text-white hover:bg-purple-800"
-                  >
+                    >
                     Reschedule
-                  </button>
+                    </button>
 
                   {/* Finalize */}
                   <button
@@ -560,6 +587,14 @@ export default function MeetingRequestsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <MeetingModal
+        open={editorOpen}
+        mode={editorMode}
+        meeting={editorMeeting}
+        onClose={() => setEditorOpen(false)}
+        onSaved={refreshMeetings}
+      />
     </main>
+    
   );
 }
