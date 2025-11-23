@@ -173,8 +173,6 @@ const AddShiftModal: React.FC<AddShiftModalProps> = ({ open, setOpen, users, wor
               className="bg-[#F72585]"
               onClick={handleSubmit}
               loading={isSubmitting ? { icon: <LoadingOutlined /> } : false}
-              
-              
             >
               Add Shift
             </Button>

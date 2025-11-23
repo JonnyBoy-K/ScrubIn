@@ -125,7 +125,7 @@ router.patch('/:id', async (req, res) => {
         const { startTime, endTime, userId, breakDuration } = req.body as {
             startTime?: string
             endTime?: string
-            userId?: number
+            userId?: string
             breakDuration?: number
         }
 
