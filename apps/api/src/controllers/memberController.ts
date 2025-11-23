@@ -5,8 +5,9 @@ import { createClerkClient } from "@clerk/backend";
 const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY! });
 
 type MemberDTO = {
-  id: string;       
-  role: string;      
+  id: string;              // userId (Clerk id)
+  membershipId: number;    // UserWorkspaceMembership.id
+  role: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -19,12 +20,12 @@ export async function listMembers(req: Request, res: Response) {
   const rows = await prisma.userWorkspaceMembership.findMany({
     where: { workspaceId },
     select: {
+      id: true,
       user: {
         select: {
           id: true,
           firstName: true,
           lastName: true,
-          clerkId: true,
           UserRoleMembership: {
             where: { workSpaceId: workspaceId },
             select: { role: { select: { name: true } } },
@@ -37,13 +38,13 @@ export async function listMembers(req: Request, res: Response) {
   const cache = new Map<string, any>();
 
   const members: MemberDTO[] = await Promise.all(
-    rows.map(async ({ user }) => {
+    rows.map(async ({ id: membershipId, user }) => {
       const firstRole = user.UserRoleMembership[0]?.role?.name ?? "Member";
 
-      let cu = cache.get(user.clerkId);
+      let cu = cache.get(user.id);
       if (!cu) {
-        cu = await clerk.users.getUser(user.clerkId);
-        cache.set(user.clerkId, cu);
+        cu = await clerk.users.getUser(user.id);
+        cache.set(user.id, cu);
       }
       const email =
         cu.primaryEmailAddress?.emailAddress ??
@@ -56,6 +57,7 @@ export async function listMembers(req: Request, res: Response) {
 
       return {
         id: String(user.id),
+        membershipId,
         role: firstRole,
         firstName: user.firstName ?? "",
         lastName: user.lastName ?? "",
@@ -70,7 +72,7 @@ export async function listMembers(req: Request, res: Response) {
 
 export async function removeMember(req: Request, res: Response) {
   const workspaceId = Number(req.params.workspaceId ?? req.params.id);
-  const userId = Number(req.params.userId);
+  const userId = String(req.params.userId);
 
   await prisma.userWorkspaceMembership.deleteMany({
     where: { workspaceId, userId },

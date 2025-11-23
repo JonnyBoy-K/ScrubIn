@@ -10,7 +10,7 @@ router.get('/', async (req, res) => {
 
 	const user = await prisma.user.findFirst({
 		where: {
-			clerkId: userId,
+			id: userId,
 		},
 	});
 
@@ -48,7 +48,7 @@ router.post('/', async (req, res) => {
 
 	const user = await prisma.user.findFirst({
 		where: {
-			clerkId: userId,
+			id: userId,
 		},
 	});
 
