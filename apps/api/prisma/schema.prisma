@@ -9,24 +9,25 @@ datasource db {
 }
 
 model User {
-  id                      Int                       @id @default(autoincrement())
+  id                      String                    @unique
   firstName               String?
   lastName                String?
-  clerkId                 String                    @unique
   createdAt               DateTime                  @default(now())
   updatedAt               DateTime                  @updatedAt
   UserWorkspaceMembership UserWorkspaceMembership[]
   UserRoleMembership      UserRoleMembership[]
   Shift                   Shift[]
   timeOffRequests         TimeOffRequest[]
+  meetingCreator          Meeting[]
 }
 
 model UserWorkspaceMembership {
   id          Int       @id @default(autoincrement())
-  userId      Int
+  userId      String
   workspaceId Int
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  meetingInvites  MeetingInvite[]
 
   @@unique([workspaceId, userId])
 }
@@ -34,11 +35,12 @@ model UserWorkspaceMembership {
 model Workspace {
   id              Int                       @id @default(autoincrement())
   name            String
-  adminId         Int
+  adminId         String
   location        String
   memberships     UserWorkspaceMembership[]
   roleMemberships UserRoleMembership[]
   timeOffRequests TimeOffRequest[]
+  meetings        Meeting[]
 }
 
 model Shift {
@@ -47,7 +49,7 @@ model Shift {
   endTime        DateTime
   clockInTime    DateTime?
   clockOutTime   DateTime?
-  userId         Int
+  userId         String
   startBreakTime DateTime?
   endBreakTime   DateTime?
   breakDuration  Int
@@ -72,7 +74,7 @@ model Permissions {
 
 model UserRoleMembership {
   id          Int       @id @default(autoincrement())
-  userId      Int
+  userId      String
   workSpaceId Int
   roleId      Int
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -88,8 +90,8 @@ enum ApprovalStatus {
 
 model ShiftRequest {
   id                  Int             @id @default(autoincrement())
-  requestorId         Int
-  requestedUserId     Int
+  requestorId         String
+  requestedUserId     String
   workspaceId         Int
   lendedShiftId       Int
   requestedShiftId    Int?
@@ -104,18 +106,55 @@ model Invitation {
   acceptedAt  DateTime?
 }
 
-model Meeting {
-  id          Int @id @default(autoincrement())
-  workspaceId Int
-}
-
 model TimeOffRequest {
   id          Int       @id @default(autoincrement())
-  userId      Int
+  userId      String
   workspaceId Int
   startDate   DateTime
   endDate     DateTime
   status      Int
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+enum MeetingStatus {
+  PENDING
+  FINALIZED
+  CANCELLED
+  RESCHEDULED
+}
+
+enum MeetingResponse {
+  PENDING
+  YES
+  NO
+}
+
+model Meeting {
+  id            Int             @id @default(autoincrement())
+  workspaceId   Int
+  createdById   String
+  location      String
+  description   String
+  scheduledAt   DateTime
+  status        MeetingStatus   @default(PENDING)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  workspace     Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy     User            @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  invitations   MeetingInvite[]
+}
+
+model MeetingInvite {
+  id           Int                     @id @default(autoincrement())
+  meetingId    Int
+  membershipId Int
+  response     MeetingResponse         @default(PENDING)
+  respondedAt  DateTime?
+
+  meeting      Meeting                 @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  membership   UserWorkspaceMembership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+
+  @@unique([meetingId, membershipId])
 }

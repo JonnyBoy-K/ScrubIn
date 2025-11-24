@@ -23,7 +23,7 @@ import { useAuth } from "@clerk/nextjs";
 import { createApiClient } from "@scrubin/api-client";
 
 type Member = {
-	id: number,
+	id: string,
 	name: string,
 	role: string,
 	email: string,
@@ -37,7 +37,7 @@ export default function TeamPage() {
 	const [members, setMembers] = useState<Member[]>([]);
 
 	// Tracks if that member has a toggled (expanded) row, showing email, phone and remove
-	const [expanded, setExpanded] = useState<Record<number, boolean>>({});
+	const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
@@ -56,7 +56,7 @@ export default function TeamPage() {
 				const data = await res.json();
 				// Map API → your Member type
 				const mapped: Member[] = (data.members ?? []).map((m: any) => ({
-					id: Number(m.id),
+					id: String(m.id),
 					name: `${m.firstName ?? ""} ${m.lastName ?? ""}`.trim() || "Unnamed",
 					role: m.role ?? "Member",
 					email: m.email ?? "",
@@ -73,7 +73,7 @@ export default function TeamPage() {
 	}, [API, workspaceId, getToken]);
 
 	//Toggle function to switch the setExpanded for true to false and vice versa
-	function toggle(id: number) {
+	function toggle(id: string) {
 		setExpanded(prev => ({
 			...prev,
 			[id]: !prev[id],
