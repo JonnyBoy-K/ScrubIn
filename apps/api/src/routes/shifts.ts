@@ -81,18 +81,18 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
     try {
         const { workspaceId, user, shifts, breakDuration } = req.body
-        
+
         // Reject invalid ISO strings
         const rows = shifts.map(
             ({ startTime, endTime }: { startTime: string; endTime: string }) => {
                 const start = new Date(startTime)
                 const end = new Date(endTime)
-                
+
                 // Ensure the shift ends after it starts
                 if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()))
                     throw new Error('Invalid ISO time')
                 if (end <= start) throw new Error('endTime must be after startTime')
-                
+
                 // Return DB-ready shape
                 return {
                     userId: user,
@@ -134,6 +134,28 @@ router.patch('/:id', async (req, res) => {
         if (endTime !== undefined) updateData.endTime = new Date(endTime)
         if (breakDuration !== undefined) updateData.breakDuration = breakDuration
         if (userId !== undefined) updateData.userId = userId
+
+        // Overlap check with other shifts
+        const nextStart = startTime ? new Date(startTime) : shift.startTime
+        const nextEnd = endTime ? new Date(endTime) : shift.endTime
+        const nextUserId = userId ?? shift.userId
+
+        if (Number.isNaN(nextStart.getTime()) || Number.isNaN(nextEnd.getTime()))
+            return res.status(400).json({ error: 'Invalid ISO time' })
+        if (nextEnd <= nextStart)
+            return res.status(400).json({ error: 'endTime must be after startTime' })
+
+        const conflict = await prisma.shift.findFirst({
+            where: {
+                workspaceId: shift.workspaceId,
+                userId: nextUserId,
+                id: { not: id },
+                startTime: { lt: nextEnd },
+                endTime: { gt: nextStart },
+            },
+        })
+
+        if (conflict) return res.status(409).json({ error: 'Shift overlaps with another shift' })
 
         const updated = await prisma.shift.update({
             where: { id: id },

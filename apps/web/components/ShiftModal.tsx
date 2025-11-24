@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react'
-import { Modal, Button, Select, DatePicker, TimePicker } from 'antd';
+import React, { useState, useEffect } from 'react'
+import { Modal, Button, Select, DatePicker, TimePicker, Alert } from 'antd';
 import {Calendar, User, Clock9, MapPin, Trash, Edit, Send} from 'lucide-react';
 import {formatLongDate, formatTimeRange} from '../helpers/time';
 import { useApiClient } from '@/hooks/useApiClient';
@@ -29,6 +29,7 @@ function ShiftModal({user, shift, onDelete, workspaceId, isVisiable, setIsVisiab
   const [openModal, setOpenModal] = useState<boolean>(false);
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [date, setDate] = useState<Dayjs | null>(dayjs(shift.startTime));
+  const [err, setErr] = useState<String | undefined>(undefined);
   const [timeRange, setTimeRange] = useState<[Dayjs, Dayjs] | null>([
     dayjs(shift.startTime),
     dayjs(shift.endTime),
@@ -42,38 +43,60 @@ function ShiftModal({user, shift, onDelete, workspaceId, isVisiable, setIsVisiab
 
 
   const editShift = async () => {
-    if (!date || !timeRange) return;
-    const [startT, endT] = timeRange;
+    try {
+      if (!date || !timeRange) return;
+      const [startT, endT] = timeRange;
 
-    const start = date
-      .hour(startT.hour())
-      .minute(startT.minute())
-      .second(startT.second())
-      .millisecond(startT.millisecond());
+      const start = date
+        .hour(startT.hour())
+        .minute(startT.minute())
+        .second(startT.second())
+        .millisecond(startT.millisecond());
 
-    const end = date
-      .hour(endT.hour())
-      .minute(endT.minute())
-      .second(endT.second())
-      .millisecond(endT.millisecond());
+      const end = date
+        .hour(endT.hour())
+        .minute(endT.minute())
+        .second(endT.second())
+        .millisecond(endT.millisecond());
 
-    const payload = {
-      ...editPayload,
-      startTime: start.toISOString(),
-      endTime: end.toISOString(),
-    };
+      const payload = {
+        ...editPayload,
+        startTime: start.toISOString(),
+        endTime: end.toISOString(),
+      };
 
-    setIsLoading(true);
-    await apiClient.updateShift(workspaceId, shift.id, payload);
-    await onSuccess();
-    resetEditState();
-    setIsVisiable(false);
-    setIsEditing(false);  
-    setIsLoading(false);
+      setIsLoading(true);
+      await apiClient.updateShift(workspaceId, shift.id, payload);
+      await onSuccess();
+      resetEditState();
+      setIsVisiable(false);
+      setIsEditing(false);  
+      setIsLoading(false);
+    } catch (error) {
+
+     let message = 'Failed to update shift'
+      if (error instanceof Error) {
+        try {
+          const parsed = JSON.parse(error.message)
+          message = parsed.error ?? parsed.message ?? message
+        } catch {
+          message = error.message || message
+        }
+      } else if (typeof error === 'string') {
+        message = error
+      }
+      setErr(message)
+      setErr(String(error)); 
+    } finally {
+      setIsLoading(false); 
+    }
+    
   };
 
   const onCancel = () => {
     setIsVisiable(false);
+    setErr(undefined); 
+    setIsEditing(false);
   }
 
   const deleteShift = async () => {
@@ -97,6 +120,15 @@ function ShiftModal({user, shift, onDelete, workspaceId, isVisiable, setIsVisiab
     });
   };
 
+  useEffect(() => {
+    setDate(dayjs(shift.startTime))
+    setTimeRange([dayjs(shift.startTime), dayjs(shift.endTime)])
+    setEditPayload({
+      userId: String(user.id),
+      breakDuration: shift.breakDuration,
+    })
+    setErr('')
+  }, [shift, user.id])
 
   return (
 
@@ -110,8 +142,18 @@ function ShiftModal({user, shift, onDelete, workspaceId, isVisiable, setIsVisiab
     >
         {/* Outline Container */}
         <div className='flex flex-col justify-center gap-8'>
+          
+         
           {/* Header */}        
           <span className='text-2xl font-semibold'>Shift Details - Manger</span>
+          {err && ( 
+          <Alert 
+            message={"Was unable to update shift"}
+            showIcon
+            type='error'
+            closable
+            onClose={() => setErr(undefined)}
+          />)}
 
           {/* Display shift details (View only) */}
 
