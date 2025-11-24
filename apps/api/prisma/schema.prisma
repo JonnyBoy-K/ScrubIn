@@ -51,7 +51,7 @@ model Shift {
   endTime           DateTime
   clockInTime       DateTime?
   clockOutTime      DateTime?
-  userId            Int
+  userId            String
   startBreakTime    DateTime?
   endBreakTime      DateTime?
   breakDuration     Int
@@ -87,11 +87,10 @@ model UserRoleMembership {
 
 model ShiftRequest {
   id               Int       @id @default(autoincrement())
-  requestorId      Int
+  requestorId      String
   workspaceId      Int
   lendedShiftId    Int
   requestedShiftId Int?
-  status           Int
   requestor        User      @relation("RequestorRelation", fields: [requestorId], references: [id], onDelete: Cascade)
   workspace        Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   lendedShift      Shift     @relation("Lended", fields: [lendedShiftId], references: [id], onDelete: Cascade)
@@ -130,6 +129,12 @@ enum MeetingResponse {
   PENDING
   YES
   NO
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 model Meeting {
