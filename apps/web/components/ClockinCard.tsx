@@ -17,6 +17,7 @@ import {
 import { useApiClient } from "@/hooks/useApiClient";
 import { useAuth } from "@clerk/nextjs";
 import { useParams } from "next/navigation";
+import type { Shift } from "@scrubin/schemas";
 
 function ShiftTradeDialog({ children }: { children: React.ReactNode }) {
     return (
@@ -40,19 +41,6 @@ function ShiftTradeDialog({ children }: { children: React.ReactNode }) {
         </Dialog>
     );
 }
-
-type Shift = {
-    id: number;
-    startTime: string;
-    endTime: string;
-    breakDuration: number;
-    timesheet?: {
-        clockInTime: string | null;
-        clockOutTime: string | null;
-        startBreakTime: string | null;
-        endBreakTime: string | null;
-    } | null;
-};
 
 export default function ClockinCard() {
     const { userId } = useAuth();

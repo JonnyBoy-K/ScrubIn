@@ -5,8 +5,8 @@ import {Calendar, User, Clock9, MapPin, Trash, Edit, Send} from 'lucide-react';
 import {formatLongDate, formatTimeRange} from '../helpers/time';
 import { useApiClient } from '@/hooks/useApiClient';
 import dayjs, {Dayjs} from 'dayjs';
+import type { Shift } from '@scrubin/schemas';
 
-type Shift = { id: number; startTime: string; endTime: string; breakDuration: number | null };
 type User = { id: string; firstName: string; lastName?: string | null };
 type Member = { id: number; firstName: string; lastName?: string | null };
 

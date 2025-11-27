@@ -1,34 +1,9 @@
 import { useAuth } from '@clerk/clerk-expo';
+import type { ShiftLegacy as Shift, UserShiftsResponseLegacy as UserShiftsResponse } from '@scrubin/schemas';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
-export interface Shift {
-    id: number;
-    startTime: string;
-    endTime: string;
-    clockInTime: string | null;
-    clockOutTime: string | null;
-    startBreakTime: string | null;
-    endBreakTime: string | null;
-    breakDuration: number;
-    userId: number;
-    workspaceId: number;
-    user: {
-        id: number;
-        firstName: string | null;
-        lastName: string | null;
-        clerkId: string;
-    };
-    workspace?: {
-        id: number;
-        name: string;
-        location: string;
-    };
-}
-
-export interface UserShiftsResponse {
-    shifts: Shift[];
-}
+// Types are imported from @scrubin/schemas
 
 // developed using ai
 class ApiClient {
