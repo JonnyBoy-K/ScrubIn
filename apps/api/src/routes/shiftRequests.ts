@@ -1,5 +1,6 @@
-import express from 'express'
-import { prisma } from '../db'
+import express from 'express';
+import { prisma } from '../db';
+import { getAuth } from '@clerk/express';
 
 const router = express.Router({ mergeParams: true })
 
@@ -258,9 +259,77 @@ router.get('/:id', async (req, res) => {
 })
 
 router.post('/', async (req, res) => {
-    // TODO: Implement create shift request
-    res.status(501).json({ error: 'Not implemented' })
-})
+	// Implemented create shift request
+	try {
+		const { lendedShiftId, requestedShiftId, requestedUserId } = req.body;
+		const { workspaceId } = (req.params as { workspaceId: string });
+
+		// Authenticated user from Clerk
+		const { userId: clerkId } = getAuth(req);
+        if (!clerkId) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+		// Look up the correspoding user row in our database
+		const requestingUser = await prisma.user.findUnique({
+			where: { id: clerkId },
+		});
+
+		if (!requestingUser) {
+			return res.status(404).json({ error: 'Requesting user not found' });
+		}
+
+		// Basic validation
+		if (!lendedShiftId) {
+			return res.status(400).json({ error: 'Missing required fields' });
+		}
+
+        if (!requestedUserId && !requestedShiftId) {
+            return res.status(400).json({ error: 'Either requestedUserId or requestedShiftId must be provided' });
+        }
+
+        // Determine if this is a trade or cover request
+        let finalRequestedUserId: string | null = null;
+
+        if (requestedShiftId) {
+            // Trade request: look up the requested shift to find its owner
+            const requestedShift = await prisma.shift.findUnique({
+                where: { id: Number(requestedShiftId) },
+                select: { userId: true },
+            });
+
+            if (!requestedShift) {
+                return res.status(404).json({ error: 'Requested shift not found' });
+            }
+
+            finalRequestedUserId = requestedShift.userId;
+        } else if (requestedUserId) {
+            // Cover request: directly use the provided requestedUserId
+            finalRequestedUserId = requestedUserId;
+        }
+
+		// Create the shift request
+		const newShiftRequest = await prisma.shiftRequest.create({
+			data: {
+				requestorId: requestingUser.id,
+				workspaceId: Number(workspaceId),
+				lendedShiftId: Number(lendedShiftId),
+				requestedShiftId: requestedShiftId ? Number(requestedShiftId) : null,
+                requestedUserId: finalRequestedUserId!,
+				approvedByRequested: 'PENDING',
+                approvedByManager: 'PENDING',
+			},
+            include: {
+                workspace: true,
+            },
+		});
+
+		res.status(201).json(newShiftRequest);
+	} catch (error) {
+		console.error(error)
+		res.status(500).json({ error: 'Failed to create shift request' });
+	}
+});
 
 router.patch('/:id', async (req, res) => {
     // TODO: Implement update shift request
