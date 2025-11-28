@@ -1,7 +1,7 @@
 import express from 'express'
 import { getAuth } from '@clerk/express'
 import { prisma } from '../db.js'
-import { getWorkspaceMembership } from '../utils/authz'
+import { getWorkspaceMembership } from '../utils/authz.js'
 
 const router = express.Router({ mergeParams: true })
 
