@@ -9,7 +9,7 @@
         "start": "node dist/index.js",
         "seed": "tsx prisma/seed.ts",
         "db": "pnpx supabase start",
-        "postinstall": "prisma generate"
+        "postinstall": "prisma generate  && prisma db push"
     },
     "keywords": [],
     "author": "",
