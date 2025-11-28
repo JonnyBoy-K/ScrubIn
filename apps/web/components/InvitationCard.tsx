@@ -15,16 +15,11 @@ import { Spinner } from "@/components/ui/spinner";
 import { useAuth } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
 import { createApiClient } from "@scrubin/api-client";
+import { InvitationInfo } from "@scrubin/schemas";
 
-type InvitationCardProps = {
-	workspaceName: string;
-	workspaceOwnerName: string;
-	workspaceOwnerEmail: string;
-	invitationId: string;
-	workspaceId: number;
-};
 
-export default function InvitationCard({ workspaceName, workspaceOwnerName, workspaceOwnerEmail, invitationId }: InvitationCardProps) {
+
+export default function InvitationCard({ workspaceName, workspaceOwnerName, workspaceOwnerEmail, invitationId }: InvitationInfo) {
 
     const [isLoading, setIsLoading] = useState(false);
     const { getToken } = useAuth();

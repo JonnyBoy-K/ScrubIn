@@ -9,8 +9,8 @@ export default function Page() {
                 <h1 className="text-3xl font-semibold mb-6">Overview</h1>
                 <p className="text-lg text-muted-foreground font-medium">Manage your shifts, breaks, and schedule.</p>
                 <div className="space-y-4">
-                    <ClockinCard/>
-                    <UpcomingSchedule/>
+                    <ClockinCard />
+                    <UpcomingSchedule />
                 </div>
             </div>
         </main>

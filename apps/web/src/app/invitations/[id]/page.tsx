@@ -17,7 +17,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
     try {
         const data = await apiClient.getInvitation(id);
-        const { workspaceOwnerName, workspaceOwnerEmail, workspaceName, invitationId, workspaceId } = data;
+        const { workspaceOwnerName, workspaceOwnerEmail, workspaceName, invitationId } = data;
 
         return (
             <main className="min-h-screen flex flex-col bg-white">
@@ -28,7 +28,6 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                             workspaceOwnerEmail={workspaceOwnerEmail}
                             workspaceOwnerName={workspaceOwnerName}
                             invitationId={invitationId}
-                            workspaceId={workspaceId}
                         />
 
                     </div>

@@ -4,22 +4,23 @@ import WorkspaceList from "../../../components/WorkspaceList";
 import { useAuth, UserButton } from "@clerk/nextjs";
 
 import { createApiClient } from "@scrubin/api-client";
+import type { Workspace } from "@scrubin/schemas";
 
 export default function Page() {
 
 
     const { getToken } = useAuth();
-    const [workspaces, setWorkspaces] = useState([]);
+    const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
     const apiClient = createApiClient({
         baseUrl: "http://localhost:4000",
         getToken
-    })
+    });
 
     useEffect(() => {
 
         (async () => {
             
-            const workspaces = await apiClient.getWorkspaces();
+            const workspaces: Workspace[] = await apiClient.getWorkspaces();
             setWorkspaces(workspaces)
         })();
     }, [apiClient])

@@ -50,52 +50,52 @@ export default function CreateShiftRequestPage() {
 
     return (
         <div className="max-w-md mx-auto mt-10 p-4 border rounded">
-      <h1 className="text-xl font-semibold mb-4">Create Shift Request</h1>
+            <h1 className="text-xl font-semibold mb-4">Create Shift Request</h1>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium">Workspace ID</label>
-          <input
-            className="w-full px-2 py-1 border rounded"
-            type="number"
-            value={workspaceId}
-            onChange={(e) => setWorkspaceId(e.target.value)}
-            required
-          />
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                    <label className="block text-sm font-medium">Workspace ID</label>
+                    <input
+                        className="w-full px-2 py-1 border rounded"
+                        type="number"
+                        value={workspaceId}
+                        onChange={(e) => setWorkspaceId(e.target.value)}
+                        required
+                    />
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium">Lended Shift ID</label>
+                    <input
+                        className="w-full px-2 py-1 border rounded"
+                        type="number"
+                        value={lendedShiftId}
+                        onChange={(e) => setLendedShiftId(e.target.value)}
+                        required
+                    />
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium">
+                        Requested Shift ID (optional)
+                    </label>
+                    <input
+                        className="w-full px-2 py-1 border rounded"
+                        type="number"
+                        value={requestedShiftId}
+                        onChange={(e) => setRequestedShiftId(e.target.value)}
+                    />
+                </div>
+
+                <button
+                    type="submit"
+                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                >
+                    Submit
+                </button>
+            </form>
+
+            {message && <p className="mt-4 text-sm">{message}</p>}
         </div>
-
-        <div>
-          <label className="block text-sm font-medium">Lended Shift ID</label>
-          <input
-            className="w-full px-2 py-1 border rounded"
-            type="number"
-            value={lendedShiftId}
-            onChange={(e) => setLendedShiftId(e.target.value)}
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">
-            Requested Shift ID (optional)
-          </label>
-          <input
-            className="w-full px-2 py-1 border rounded"
-            type="number"
-            value={requestedShiftId}
-            onChange={(e) => setRequestedShiftId(e.target.value)}
-          />
-        </div>
-
-        <button
-          type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          Submit
-        </button>
-      </form>
-
-      {message && <p className="mt-4 text-sm">{message}</p>}
-    </div>
     )
 }
