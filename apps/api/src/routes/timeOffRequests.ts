@@ -168,7 +168,7 @@ router.delete('/:id', async (req, res) => {
  * POST /workspaces/:workspaceId/timeoff-requests/:id/approve
  * Marks time off request as approved.
  */
-router.post('/:id/approve', async (req: Request<{ workspaceId: string; id: string }>, res) => {
+router.post('/:id/admin/approve', async (req: Request<{ workspaceId: string; id: string }>, res) => {
     try {
         const workspaceId = Number(req.params.workspaceId)
         const id = Number(req.params.id)
@@ -202,7 +202,7 @@ router.post('/:id/approve', async (req: Request<{ workspaceId: string; id: strin
  * POST /workspaces/:workspaceId/timeoff-requests/:id/reject
  * Marks time off request as denied.
  */
-router.post('/:id/reject', async (req: Request<{ workspaceId: string; id: string }>, res) => {
+router.post('/:id/admin/reject', async (req: Request<{ workspaceId: string; id: string }>, res) => {
     try {
         const workspaceId = Number(req.params.workspaceId)
         const id = Number(req.params.id)

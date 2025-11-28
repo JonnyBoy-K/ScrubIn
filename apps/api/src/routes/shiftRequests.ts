@@ -28,7 +28,7 @@ function fullName(user: { firstName: string | null; lastName: string | null } | 
 function computeStatus(row: { approvedByRequested: string; approvedByManager: string | null }) {
     const req = (row.approvedByRequested || '').toUpperCase()
     const mgr = (row.approvedByManager || '').toUpperCase()
-    if (req === 'DENIED' || mgr === 'DENIED') return 'denied' as const
+    if (req === 'REJECTED' || mgr === 'REJECTED') return 'denied' as const
     if (req === 'APPROVED' && mgr === 'APPROVED') return 'approved' as const
     return 'pending' as const
 }
@@ -52,7 +52,7 @@ router.get('/', async (req, res) => {
             // Manager pending: requested user has approved, manager not decided yet
             where.AND = [
                 { approvedByRequested: 'APPROVED' },
-                { OR: [{ approvedByManager: null }, { approvedByManager: 'PENDING' }] },
+                { approvedByManager: 'PENDING'  },
             ]
         }
 
