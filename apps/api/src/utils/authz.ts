@@ -1,4 +1,4 @@
-import { prisma } from '../db'
+import { prisma } from '../db.js'
 
 export async function getWorkspaceMembership(clerkId: string, workspaceId: number) {
     const membership = await prisma.userWorkspaceMembership.findFirst({

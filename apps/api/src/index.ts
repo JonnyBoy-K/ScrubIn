@@ -3,7 +3,7 @@ import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
-import { prisma } from './db'
+import { prisma } from './db.js'
 import { clerkMiddleware } from '@clerk/express'
 import { verifyWebhook } from '@clerk/express/webhooks'
 

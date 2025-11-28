@@ -1,7 +1,7 @@
 import express from 'express'
 import { getAuth } from '@clerk/express'
 import { clerkClient } from '@clerk/express'
-import { prisma } from '../db'
+import { prisma } from '../db.js'
 
 const router = express.Router()
 

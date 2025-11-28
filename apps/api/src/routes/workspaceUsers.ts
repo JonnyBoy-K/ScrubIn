@@ -1,5 +1,5 @@
 import express from 'express'
-import { prisma } from '../db'
+import { prisma } from '../db.js'
 import { listMembers, removeMember } from '../controllers/memberController'
 
 const router = express.Router({ mergeParams: true })

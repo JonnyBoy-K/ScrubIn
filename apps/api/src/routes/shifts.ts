@@ -1,5 +1,5 @@
 import express from 'express'
-import { prisma } from '../db'
+import { prisma } from '../db.js'
 import type { Request, Response } from 'express'
 import type { Prisma } from '@prisma/client'
 

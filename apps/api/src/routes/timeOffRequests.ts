@@ -1,5 +1,5 @@
 import express from 'express'
-import { prisma } from '../db'
+import { prisma } from '../db.js'
 
 import type { Request } from 'express'
 const router = express.Router({ mergeParams: true })

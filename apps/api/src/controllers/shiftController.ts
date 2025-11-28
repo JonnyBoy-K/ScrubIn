@@ -1,4 +1,4 @@
-import { prisma } from '../db'
+import { prisma } from '../db.js'
 
 export const getAllShifts = async (_req: any, _res: any) => {
     try {
