@@ -22,7 +22,7 @@ export default function Page() {
             const workspaces = await apiClient.getWorkspaces();
             setWorkspaces(workspaces)
         })();
-    }, [])
+    }, [apiClient])
     return (
         <div>
             <nav className="sticky top-0 z-50 border-b border-gray-200 bg-white">

@@ -45,7 +45,7 @@ export default function SignUpPage({ navigation }: Props) {
         console.error(JSON.stringify(signUpAttempt, null, 2));
         Alert.alert('Error', 'Sign up failed. Please try again.');
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error(JSON.stringify(err, null, 2));
       Alert.alert('Error', err.errors?.[0]?.message || 'Something went wrong');
     }
@@ -63,7 +63,7 @@ export default function SignUpPage({ navigation }: Props) {
         if (createdSessionId) {
             await setActive!({ session: createdSessionId });
         }
-    } catch (err: any) {
+    } catch (err) {
         console.error(JSON.stringify(err, null, 2));
         Alert.alert('Error', err.errors?.[0]?.message || `Failed to sign up with ${strategy}`);
     } finally {

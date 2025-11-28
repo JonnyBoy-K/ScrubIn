@@ -24,7 +24,7 @@ type InvitationCardProps = {
 	workspaceId: number;
 };
 
-export default function InvitationCard({ workspaceName, workspaceOwnerName, workspaceOwnerEmail, invitationId, workspaceId }: InvitationCardProps) {
+export default function InvitationCard({ workspaceName, workspaceOwnerName, workspaceOwnerEmail, invitationId }: InvitationCardProps) {
 
     const [isLoading, setIsLoading] = useState(false);
     const { getToken } = useAuth();

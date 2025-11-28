@@ -124,9 +124,9 @@ export default function ShiftRequestsPage() {
       if (!alive) return;
       setRequests(combined);
       setSelectedId(combined[0]?.id ?? "");
-    } catch (e: any) {
+    } catch (err) {
       if (!alive) return;
-      setError(e?.message ?? "Failed to load requests");
+      setError(err.message ?? "Failed to load requests");
     } finally {
       if (!alive) return;
       setLoading(false);
@@ -190,10 +190,10 @@ export default function ShiftRequestsPage() {
 
       setRequests(nextRequests);
       setSelectedId(nextSelected);
-    } catch (e: any) {
+    } catch (err) {
       setError(
         `Failed to ${confirm.action} request${
-          e?.message ? `: ${e.message}` : ""
+          err.message ? `: ${err.message}` : ""
         }`
       );
     } finally {

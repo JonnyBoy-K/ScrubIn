@@ -12,11 +12,12 @@ import {
   Alert,
 } from "antd";
 import { LoadingOutlined } from '@ant-design/icons';
+import { User } from "@scrubin/schemas";
 
 type AddShiftModalProps = {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  users: any;
+  users: User[];
   workspaceId: number;
   onSuccess?: ()=> void | Promise<void>;  
 
@@ -24,7 +25,7 @@ type AddShiftModalProps = {
 
 
 const AddShiftModal: React.FC<AddShiftModalProps> = ({ open, setOpen, users, workspaceId, onSuccess }) => {
-  const [user, setUser] = useState<any | undefined>(undefined);
+  const [user, setUser] = useState<string | undefined>(undefined);
   const [dates, setDates] = useState<Dayjs[] | null>(null);
   const [timeRange, setTimeRange] = useState<[Dayjs, Dayjs] | null>(null);
   const [alertDesc, setAlertDesc] = useState<string | null>(null);
@@ -129,7 +130,7 @@ const AddShiftModal: React.FC<AddShiftModalProps> = ({ open, setOpen, users, wor
                 style={{ width: 200 }}
                 placeholder="Select Employee"
                 onChange={(value) => setUser(value)}
-                options={users?.map((user: { id: any; firstName: any; }) => ({
+                options={users?.map((user: User) => ({
                 value: String(user.id),
                 label: user.firstName,
                 })) ?? []}

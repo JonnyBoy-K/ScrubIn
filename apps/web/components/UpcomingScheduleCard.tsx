@@ -97,9 +97,9 @@ export default function UpcomingScheduleCard() {
         userShifts.sort((a, b) => a.startTime.getTime() - b.startTime.getTime())
 
         setShifts(userShifts)
-      } catch (e: any) {
+      } catch (err) {
         if (!alive) return
-        setError(e?.message ?? "Failed to load shifts")
+        setError(err.message ?? "Failed to load shifts")
       } finally {
         if (alive) {
           setLoading(false)

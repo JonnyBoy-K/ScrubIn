@@ -41,7 +41,7 @@ export default function SignInPage({ navigation }: Props) {
         console.error(JSON.stringify(signInAttempt, null, 2));
         Alert.alert('Error', 'Sign in failed. Please try again.');
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error(JSON.stringify(err, null, 2));
       Alert.alert('Error', err.errors?.[0]?.message || 'Something went wrong');
     }
@@ -59,7 +59,7 @@ export default function SignInPage({ navigation }: Props) {
         if (createdSessionId) {
             await setActive!({ session: createdSessionId });
         }
-    } catch (err: any) {
+    } catch (err) {
         console.error(JSON.stringify(err, null, 2));
         Alert.alert('Error', err.errors?.[0]?.message || 'Failed to sign in with ${getProviderName(strategy)}');
     } finally {

@@ -19,7 +19,7 @@ async function getWorkspaceMembershipStatus(token: string | null, workspaceId: n
     
     await apiClient.getWorkspace(workspaceId); 
     return 200; 
-  } catch (error: any) {
+  } catch (error) {
     return error.status || 500;
   }
 }

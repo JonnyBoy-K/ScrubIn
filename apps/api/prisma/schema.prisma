@@ -54,6 +54,9 @@ model Shift {
   workspaceId    Int
   user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   timesheet Timesheet?
+  
+  lendedRequests     ShiftRequest[] @relation("Lended") @ignore
+  requestedRequests  ShiftRequest[] @relation("Requested") @ignore
 
 }
 

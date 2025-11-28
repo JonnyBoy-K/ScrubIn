@@ -85,7 +85,7 @@ export default function MeetingModal({
           mode === "edit" && meeting ? meeting.createdById : currentUserId;
 
         const mapped: MemberOption[] = (data.members ?? [])
-          .map((m: any) => ({
+          .map((m: MemberOption) => ({
             id: String(m.membershipId ?? m.id), // prefer membership id, fallback to user id
             userId: String(m.userId ?? m.id),
             name: `${m.firstName ?? ""} ${m.lastName ?? ""}`.trim() || "Unnamed",
@@ -96,8 +96,8 @@ export default function MeetingModal({
           );
 
         setMembers(mapped);
-      } catch (e: any) {
-        setError(e.message ?? "Failed to load members");
+      } catch (err) {
+        setError(err.message ?? "Failed to load members");
       }
     })();
   }, [open, workspaceId, getToken, mode, meeting, currentUserId]);
@@ -214,8 +214,8 @@ export default function MeetingModal({
 
       onSaved();
       onClose();
-    } catch (e: any) {
-      setError(e.message ?? "Failed to save meeting");
+    } catch (err) {
+      setError(err.message ?? "Failed to save meeting");
     } finally {
       setLoading(false);
     }

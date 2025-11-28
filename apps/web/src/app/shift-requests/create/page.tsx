@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react';
-import { useUser, useAuth } from '@clerk/nextjs';
+import { useAuth } from '@clerk/nextjs';
 
 export default function CreateShiftRequestPage() {
     const { getToken } = useAuth();

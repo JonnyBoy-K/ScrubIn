@@ -2,8 +2,6 @@ import Link from "next/link";
 import {
     Calendar,
     LayoutDashboard,
-    UsersRound,
-    UserRoundCog,
     Send,
     Bell,
     Bolt,

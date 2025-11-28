@@ -124,7 +124,7 @@ export default function MeetingRequestsPage() {
 
         // Backend now returns:
         // { meetings: [{ id, location, description, date, time, status, attendees: { yes, no, pending } }, ...] }
-        const mapped: Meeting[] = (data.meetings ?? []).map((m: any) => ({
+        const mapped: Meeting[] = (data.meetings ?? []).map((m: Meeting) => ({
             id: String(m.id),
             location: m.location ?? "No location",
             description: m.description ?? "",
@@ -143,9 +143,9 @@ export default function MeetingRequestsPage() {
         if (!alive) return;
         setMeetings(mapped);
         setSelectedId((prev) => prev || mapped[0]?.id || "");
-      } catch (e: any) {
+      } catch (err) {
         if (!alive) return;
-        setError(e?.message ?? "Failed to load meetings");
+        setError(err.message ?? "Failed to load meetings");
       } finally {
         if (!alive) return;
         setLoading(false);
@@ -197,9 +197,9 @@ export default function MeetingRequestsPage() {
         setSelectedId(nextSelected);
         return next;
       });
-    } catch (e: any) {
+    } catch (err) {
       setError(
-        `Failed to delete meeting${e?.message ? `: ${e.message}` : ""}`
+        `Failed to delete meeting${err.message ? `: ${err.message}` : ""}`
       );
     } finally {
       closeDeleteConfirm();
@@ -245,10 +245,10 @@ export default function MeetingRequestsPage() {
           m.id === meetingId ? { ...m, status: action } : m
         )
       );
-    } catch (e: any) {
+    } catch (err) {
       setError(
         `Failed to ${action === "FINALIZED" ? "Finalize" : "Cancel"} meeting${
-          e?.message ? `: ${e.message}` : ""
+          err.message ? `: ${err.message}` : ""
         }`
       );
     } finally {

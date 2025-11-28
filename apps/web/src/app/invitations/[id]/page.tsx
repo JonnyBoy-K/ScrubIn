@@ -35,7 +35,8 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                 </div>
             </main>
         );
-    } catch (_error) {
+    } catch (error) {
+        console.error(error)
         return redirect("/not-found");
     }
 }

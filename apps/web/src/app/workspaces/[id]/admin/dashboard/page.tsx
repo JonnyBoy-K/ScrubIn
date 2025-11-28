@@ -24,14 +24,14 @@ import {
   parseISO,
 } from "date-fns"; 
 import ShiftModal from "../../../../../../components/ShiftModal";
+import { Shift, User } from "@scrubin/schemas";
 
 
 type ApiShift = { id: number; startTime: string; endTime: string; breakDuration: number | null };
-type Member = { id: number; firstName: string; lastName?: string | null };
 type WeeklyResponse = {
   days: string[];                             
-  users: Member[];                          
-  buckets: Record<number, Record<string, ApiShift[]>>;
+  users: User[];                          
+  buckets: Record<string, Record<string, ApiShift[]>>;
 };
 
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
@@ -42,11 +42,11 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const [anchor, setAnchor] = useState<Date>(getToday());
   const [isModal, setIsModal] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false); 
-  const [users, setUsers] = useState<Member[]>([]); 
+  const [users, setUsers] = useState<User[]>([]); 
   const [shifts, setShifts] = useState<WeeklyResponse>(emptyWeekly);
   const [error, setError] = useState<string | null>(null);
-  const [selectedUser, setSelectedUser] = useState<any | undefined>(undefined);
-  const [selectedShift, setSelectedShift] = useState<any | undefined>(undefined);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [openShiftDetails, setOpenShiftDeatils] = useState<boolean>(false);  
   
   const apiClient = useApiClient();
@@ -64,7 +64,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
       setIsLoading(false);
 
     } catch (error) {
-      console.log("Error fetching users"); 
+      console.error("Error fetching users: ", error); 
       setError("Could not load users");
     } finally {
       setIsLoading(false);
@@ -128,7 +128,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
   if (!hasValidWorkspace) return;
   getUsers();
   getShifts(); // Refetch when workspace changes or week window moves
- }, [hasValidWorkspace, id, week.start, week.end]); 
+ }, [hasValidWorkspace, id, week.start, week.end, getUsers, getShifts]); 
 
   return (
       <div className="min-h-screen border-b border-border bg-card px-6 py-4">

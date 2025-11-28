@@ -22,14 +22,7 @@ import { useParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { createApiClient } from "@scrubin/api-client";
 
-type Member = {
-	id: string,
-	name: string,
-	role: string,
-	email: string,
-	phone: string,
-}
-
+import { type Member } from "@scrubin/schemas";
 export default function TeamPage() {
 	const { id: workspaceId } = useParams<{ id: string }>();
 	const { getToken } = useAuth();
@@ -55,7 +48,7 @@ export default function TeamPage() {
 				if (!res.ok) throw new Error(`HTTP ${res.status}`);
 				const data = await res.json();
 				// Map API → your Member type
-				const mapped: Member[] = (data.members ?? []).map((m: any) => ({
+				const mapped: Member[] = (data.members ?? []).map((m: Member[]) => ({
 					id: String(m.id),
 					name: `${m.firstName ?? ""} ${m.lastName ?? ""}`.trim() || "Unnamed",
 					role: m.role ?? "Member",
@@ -63,8 +56,8 @@ export default function TeamPage() {
 					phone: m.phone ?? "",
 				}));
 				if (alive) setMembers(mapped);
-			} catch (e: any) {
-				if (alive) setError(e.message ?? "Failed to load team");
+			} catch (err) {
+				if (alive) setError(err.message ?? "Failed to load team");
 			} finally {
 				if (alive) setLoading(false);
 			}

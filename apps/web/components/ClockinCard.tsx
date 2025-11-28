@@ -73,140 +73,8 @@ export default function ClockinCard() {
     const breakStartTime = currentShift?.timesheet?.startBreakTime ? parseISO(currentShift.timesheet.startBreakTime) : null;
     // const breakEndTime = currentShift?.timesheet?.endBreakTime ? parseISO(currentShift.timesheet.endBreakTime) : null;
 
-    // Fetch upcoming shift
-    useEffect(() => {
-        if (!userId || !workspaceId) return;
-        
-        let alive = true;
-        
-        async function fetchUpcomingShift() {
-            try {
-                setLoading(true);
-                setError(null);
-                
-                const now = new Date();
-                const endDate = new Date();
-                endDate.setDate(endDate.getDate() + 7); // Look ahead 7 days
-                
-                const response = await apiClient.getUserShifts(workspaceId!, userId, {
-                    start: now.toISOString(),
-                    end: endDate.toISOString(),
-                }) as { shifts: Shift[] };
-                
-                if (!alive) return;
-                
-                // Filter out shifts that have been clocked out (completed)
-                const activeShifts = response.shifts.filter(s => {
-                    // Exclude shifts that have a timesheet with clockOutTime set
-                    return !s.timesheet || !s.timesheet.clockOutTime;
-                });
-                
-                // Find today's shift or the next upcoming shift
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const tomorrow = new Date(today);
-                tomorrow.setDate(tomorrow.getDate() + 1);
-                
-                // First try to find today's shift
-                let shift = activeShifts.find(s => {
-                    const shiftDate = parseISO(s.startTime);
-                    return shiftDate >= today && shiftDate < tomorrow;
-                });
-                
-                // If no shift today, get the next upcoming one
-                if (!shift && activeShifts.length > 0) {
-                    shift = activeShifts[0];
-                }
-                
-                setCurrentShift(shift || null);
-                
-                // Fetch coworkers working during the same shift time
-                if (shift) {
-                    await fetchCoworkers(shift);
-                }
-            } catch (err: any) {
-                if (!alive) return;
-                setError(err?.message || "Failed to load shift");
-                console.error("Error fetching upcoming shift:", err);
-            } finally {
-                if (alive) {
-                    setLoading(false);
-                }
-            }
-        }
-        
-        fetchUpcomingShift();
-        
-        return () => {
-            alive = false;
-        };
-    }, [userId, workspaceId, apiClient]);
-
     // Fetch coworkers working during overlapping shift times
-    const fetchCoworkers = async (shift: Shift) => {
-        if (!workspaceId || !userId) return;
-        
-        try {
-            const shiftStart = parseISO(shift.startTime);
-            const shiftEnd = parseISO(shift.endTime);
-            
-            // Fetch all shifts in the workspace during this time period
-            // Expand the range slightly to catch overlapping shifts
-            const searchStart = new Date(shiftStart);
-            searchStart.setHours(0, 0, 0, 0);
-            const searchEnd = new Date(shiftEnd);
-            searchEnd.setHours(23, 59, 59, 999);
-            
-            const response = await apiClient.getWorkspaceShifts(workspaceId, {
-                start: searchStart.toISOString(),
-                end: searchEnd.toISOString(),
-            }) as {
-                days: string[];
-                users: Array<{ id: string; firstName: string | null; lastName: string | null }>;
-                buckets: Record<string, Record<string, Array<{ id: number; startTime: string; endTime: string }>>>;
-            };
-            
-            // Extract shifts that overlap with the current shift
-            const overlappingUserIds = new Set<string>();
-            
-            // Create a map of userId (from buckets) to user id (from users array)
-            // The buckets use userId (string) as keys, but we need to match with user.id
-            const userIdToUserMap = new Map<string, string>();
-            response.users.forEach(user => {
-                // The buckets key is the userId from the shift, which matches user.id
-                userIdToUserMap.set(user.id, user.id);
-            });
-            
-            // Iterate through buckets to find overlapping shifts
-            for (const userIdKey in response.buckets) {
-                // Skip the current user
-                if (userIdKey === userId) continue;
-                
-                const userBuckets = response.buckets[userIdKey];
-                for (const day in userBuckets) {
-                    const dayShifts = userBuckets[day];
-                    for (const s of dayShifts) {
-                        const sStart = parseISO(s.startTime);
-                        const sEnd = parseISO(s.endTime);
-                        
-                        // Check if shifts overlap: shift1 starts before shift2 ends AND shift1 ends after shift2 starts
-                        if (sStart < shiftEnd && sEnd > shiftStart) {
-                            // userIdKey is the userId from the shift, which should match user.id
-                            overlappingUserIds.add(userIdKey);
-                            break; // Found overlap, no need to check more shifts for this user
-                        }
-                    }
-                }
-            }
-            
-            // Get user details for overlapping users
-            const coworkerUsers = response.users.filter(user => overlappingUserIds.has(user.id));
-            setCoworkers(coworkerUsers);
-        } catch (err) {
-            console.error("Error fetching coworkers:", err);
-            // Don't set error state for coworkers, just log it
-        }
-    };
+   
 
     // Refresh shift data after API calls
     const refreshShift = async () => {
@@ -282,6 +150,142 @@ export default function ClockinCard() {
         }
     };
 
+    // Fetch upcoming shift
+    useEffect(() => {
+
+        const fetchCoworkers = async (shift: Shift) => {
+            if (!workspaceId || !userId) return;
+            
+            try {
+                const shiftStart = parseISO(shift.startTime);
+                const shiftEnd = parseISO(shift.endTime);
+                
+                // Fetch all shifts in the workspace during this time period
+                // Expand the range slightly to catch overlapping shifts
+                const searchStart = new Date(shiftStart);
+                searchStart.setHours(0, 0, 0, 0);
+                const searchEnd = new Date(shiftEnd);
+                searchEnd.setHours(23, 59, 59, 999);
+                
+                const response = await apiClient.getWorkspaceShifts(workspaceId, {
+                    start: searchStart.toISOString(),
+                    end: searchEnd.toISOString(),
+                }) as {
+                    days: string[];
+                    users: Array<{ id: string; firstName: string | null; lastName: string | null }>;
+                    buckets: Record<string, Record<string, Array<{ id: number; startTime: string; endTime: string }>>>;
+                };
+                
+                // Extract shifts that overlap with the current shift
+                const overlappingUserIds = new Set<string>();
+                
+                // Create a map of userId (from buckets) to user id (from users array)
+                // The buckets use userId (string) as keys, but we need to match with user.id
+                const userIdToUserMap = new Map<string, string>();
+                response.users.forEach(user => {
+                    // The buckets key is the userId from the shift, which matches user.id
+                    userIdToUserMap.set(user.id, user.id);
+                });
+                
+                // Iterate through buckets to find overlapping shifts
+                for (const userIdKey in response.buckets) {
+                    // Skip the current user
+                    if (userIdKey === userId) continue;
+                    
+                    const userBuckets = response.buckets[userIdKey];
+                    for (const day in userBuckets) {
+                        const dayShifts = userBuckets[day];
+                        for (const s of dayShifts) {
+                            const sStart = parseISO(s.startTime);
+                            const sEnd = parseISO(s.endTime);
+                            
+                            // Check if shifts overlap: shift1 starts before shift2 ends AND shift1 ends after shift2 starts
+                            if (sStart < shiftEnd && sEnd > shiftStart) {
+                                // userIdKey is the userId from the shift, which should match user.id
+                                overlappingUserIds.add(userIdKey);
+                                break; // Found overlap, no need to check more shifts for this user
+                            }
+                        }
+                    }
+                }
+                
+                // Get user details for overlapping users
+                const coworkerUsers = response.users.filter(user => overlappingUserIds.has(user.id));
+                setCoworkers(coworkerUsers);
+            } catch (err) {
+                console.error("Error fetching coworkers:", err);
+                // Don't set error state for coworkers, just log it
+            }
+        };
+
+        if (!userId || !workspaceId) return;
+        
+        let alive = true;
+        
+        async function fetchUpcomingShift() {
+            try {
+                setLoading(true);
+                setError(null);
+                
+                const now = new Date();
+                const endDate = new Date();
+                endDate.setDate(endDate.getDate() + 7); // Look ahead 7 days
+                
+                const response = await apiClient.getUserShifts(workspaceId!, userId, {
+                    start: now.toISOString(),
+                    end: endDate.toISOString(),
+                }) as { shifts: Shift[] };
+                
+                if (!alive) return;
+                
+                // Filter out shifts that have been clocked out (completed)
+                const activeShifts = response.shifts.filter(s => {
+                    // Exclude shifts that have a timesheet with clockOutTime set
+                    return !s.timesheet || !s.timesheet.clockOutTime;
+                });
+                
+                // Find today's shift or the next upcoming shift
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                
+                // First try to find today's shift
+                let shift = activeShifts.find(s => {
+                    const shiftDate = parseISO(s.startTime);
+                    return shiftDate >= today && shiftDate < tomorrow;
+                });
+                
+                // If no shift today, get the next upcoming one
+                if (!shift && activeShifts.length > 0) {
+                    shift = activeShifts[0];
+                }
+                
+                setCurrentShift(shift || null);
+                
+                // Fetch coworkers working during the same shift time
+                if (shift) {
+                    await fetchCoworkers(shift);
+                }
+            } catch (err) {
+                if (!alive) return;
+                setError(err?.message || "Failed to load shift");
+                console.error("Error fetching upcoming shift:", err);
+            } finally {
+                if (alive) {
+                    setLoading(false);
+                }
+            }
+        }
+        
+        fetchUpcomingShift();
+        
+        return () => {
+            alive = false;
+        };
+    }, [userId, workspaceId, apiClient]);
+
+    
 
     return (
         <Card className="border-border bg-card text-card-foreground shadow-sm">
