@@ -120,7 +120,7 @@ export function createApiClient({ baseUrl, getToken }) {
 		createWorkspace: (data) => request({ method: 'POST', path: '/workspaces', body: data }),
 		updateWorkspace: (id, data) =>
 			request({ method: 'PATCH', path: `/workspaces/${id}`, body: data }),
-		deleteWorkspace: (id) => request({ method: 'DELETE', path: `/workspaces/${id}` }),
+		deleteWorkspace: (id) => request({ method: 'DELETE', path: `/workspaces/${id}`}),
 
 		// Workspace members
 		getWorkspaceMembers: (workspaceId, params?) =>
@@ -245,6 +245,10 @@ export function createApiClient({ baseUrl, getToken }) {
 				path: `/workspaces/${workspaceId}/shift-requests/${id}/reject`,
 				body: {}
 			}),
+		
+		// Time Off Requests
+		getTimeOffRequests: (workspaceId, params?) =>
+			request({method: 'GET', path: `/workspaces/${workspaceId}/timeoff-requests`, params}),
 
 		// Meetings
 		getMeetingsByWorkspace: (workspaceId, params?) =>

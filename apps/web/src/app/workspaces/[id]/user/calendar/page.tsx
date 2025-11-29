@@ -19,9 +19,9 @@ import {
   format,
   parseISO,
   startOfDay,
-  endOfDay,
   addDays
 } from 'date-fns';
+
 
 
 type Shift = {
@@ -30,6 +30,7 @@ type Shift = {
     startTime: string, 
     endTime: string, 
     role: string,
+    kind: 'shift'
 }
 
 type ApiShift = {
@@ -44,12 +45,65 @@ type ApiShift = {
 
 type WorkspaceShcedule = {
     days: string[];
-    users: {id: string; firstName: string | null; lastName: string | null;}[]
+    users: {id: number; firstName: string | null; lastName: string | null;}[]
     buckets: Record<number, Record<string, ApiShift[]>>;
 }
 
+type ApiTimeOffRequest = {
+    id: string;
+    status: 'pending' | 'approved' | 'denied';
+    requesterNames: string[];
+    dateRange: {
+        start: string;
+        end: string;
+    }
+}
+
+type TimeOffEvent = {
+    id: string; 
+    date: string;
+    startDate: string,
+    endDate: string,
+    requesterName: string;
+    kind: 'timeoff'; 
+}
+
+type CoworkerEntry = {
+    member: WorkspaceShcedule['users'][number];
+    shifts: ApiShift[];
+}
+
+
 function cn(...classes: (string | false | null | undefined)[]) {
   return classes.filter(Boolean).join(" ")
+}
+
+const expandTimeOffRequests = (requests: ApiTimeOffRequest[]): TimeOffEvent[] => {
+    const events: TimeOffEvent[] = [];
+
+    for (const req of requests) {
+        const requesterName= req.requesterNames[0] ?? 'Unkown';
+
+        const rangeStart = new Date(req.dateRange.start); 
+        const rangeEnd = new Date(req.dateRange.end);
+
+        let cursor = startOfDay(rangeStart); 
+
+        while (cursor <= rangeEnd) {
+            events.push({
+                id: req.id,
+                date: format(cursor, 'yyyy-MM-dd'),
+                startDate: req.dateRange.start,
+                endDate: req.dateRange.end,
+                requesterName,
+                kind: 'timeoff'
+            });
+
+            cursor = addDays(cursor, 1); 
+        }
+    }
+
+    return events;
 }
 
 export default function page({ params }: { params: Promise<{ id: string }> }) {
@@ -60,7 +114,8 @@ export default function page({ params }: { params: Promise<{ id: string }> }) {
   const [selectedDate, setSelectedDate] = useState<Date | null>(currentDate); 
   const [shifts, setShifts] = useState<Shift[]>([]); 
   const [isLoading, setIsloading] = useState<boolean>(false);
-  const [teamSchedule, setTeamSchedule] = useState<WorkspaceShcedule | null>(null); 
+  const [teamSchedule, setTeamSchedule] = useState<WorkspaceShcedule | null>(null);
+  const [timeOff, setTimeOff] = useState<TimeOffEvent[]>([]); 
   const [err, setErr] = useState<string>('');
   
 
@@ -76,18 +131,11 @@ export default function page({ params }: { params: Promise<{ id: string }> }) {
         startTime: format(start, 'HH:mm'),
         endTime: format(end, 'HH:mm'),
         role: "Shift",
+        kind: "shift",
     }
   }
   
-  const calendarDays = useMemo( () => {
-    const startOfMonthDate = startOfMonth(currentDate);
-    const endOfMonthDate = endOfMonth(currentDate); 
-
-    const start = startOfWeek(startOfMonthDate, {weekStartsOn: 0});
-    const end = endOfWeek(endOfMonthDate, {weekStartsOn: 0});
-
-    return eachDayOfInterval({start, end});
-  }, [currentDate]); 
+  
 
   const fetchShifts = async() => {
     try {
@@ -121,14 +169,66 @@ export default function page({ params }: { params: Promise<{ id: string }> }) {
     ); 
 
     setTeamSchedule(data);
-  }, [apiClient, id]); 
+  }, [apiClient, id]);
+  
+  const fetchTimeOff = async() => {
+    try {
+        const monthStart = startOfMonth(currentDate);
+        const monthEnd = endOfMonth(currentDate);
+
+        const data = await apiClient.getTimeOffRequests(id, {
+            status: "approved"
+        });
+        
+        const apiRequests: ApiTimeOffRequest[] = data.requests ?? [];
+        const events = expandTimeOffRequests(apiRequests);
+        setTimeOff(events); 
+    } catch (error) {
+        console.log(error); 
+    }
+  }
 
   useEffect(() => {
     if (!selectedDate) return;
     fetchTeamSchedule(selectedDate);
   }, [selectedDate, fetchTeamSchedule])
 
-  const coworkerEntries = useMemo(() => {
+  useEffect(() => {
+    if (!userId) return;
+    fetchShifts();
+    fetchTimeOff();  
+  }, [apiClient, id, userId, currentDate])
+
+  const getShiftsForDay = useCallback( (day: Date) => {
+    const key = format(day, 'yyyy-MM-dd');
+    return shifts.filter((s) => s.date === key); 
+  }, [shifts]); 
+
+  const getTimeOffForDay = useCallback((day: Date) => {
+    const key = format(day, 'yyyy-MM-dd');
+    return timeOff.filter((t) => t.date === key); 
+  }, [timeOff]); 
+
+  const selectedDayEntries = useMemo(() => {
+    if (!selectedDate) return [];
+
+    const shiftsForDay = getShiftsForDay(selectedDate);
+    const timeOffForDay = getTimeOffForDay(selectedDate);
+
+    return [...shiftsForDay, ...timeOffForDay];
+  }, [selectedDate, getShiftsForDay, getTimeOffForDay]); 
+
+  const calendarDays = useMemo( () => {
+    const startOfMonthDate = startOfMonth(currentDate);
+    const endOfMonthDate = endOfMonth(currentDate); 
+
+    const start = startOfWeek(startOfMonthDate, {weekStartsOn: 0});
+    const end = endOfWeek(endOfMonthDate, {weekStartsOn: 0});
+
+    return eachDayOfInterval({start, end});
+  }, [currentDate]); 
+
+  const coworkerEntries = useMemo<CoworkerEntry[]>(() => {
     if (!teamSchedule || !selectedDate) return [];
     const key = format(selectedDate, 'yyyy-MM-dd');
     return teamSchedule.users
@@ -140,26 +240,15 @@ export default function page({ params }: { params: Promise<{ id: string }> }) {
         .filter(entry => entry.shifts.length > 0);
   }, [teamSchedule, selectedDate, userId]);
 
-  useEffect(() => {
-    if (!userId) return;
-    fetchShifts(); 
-  }, [apiClient, id, userId, currentDate])
+  
 
-  const getShiftsForDay = useCallback( (day: Date) => {
-    const key = format(day, 'yyyy-MM-dd');
-    return shifts.filter((s) => s.date === key); 
-  }, [shifts]); 
-
-  const selectedDayShifts = useMemo(
-    () => (selectedDate ? getShiftsForDay(selectedDate) : []),
-    [selectedDate, getShiftsForDay]
-  )
 
   const previousMonth = () =>
     setCurrentDate((d) => subMonths(d, 1));
 
   const nextMonth = () =>
     setCurrentDate((d) => addMonths(d, 1));
+  
 
   return (
       <div className="max-w-7xl mx-auto space-y-6">
@@ -211,6 +300,7 @@ export default function page({ params }: { params: Promise<{ id: string }> }) {
                 <div className='grid grid-cols-7 gap-2 px-2'>
                     {calendarDays.map((day, index) => {
                         const dayShifts = getShiftsForDay(day);
+                        const dayTimeOff = getTimeOffForDay(day);
                         const isCurrentMonthDay = isSameMonth(day, currentDate);
                         const isSelected = selectedDate && isSameDay(day, selectedDate);
                         const isToday = isSameDay(day, new Date());
@@ -244,6 +334,15 @@ export default function page({ params }: { params: Promise<{ id: string }> }) {
                                                 </div>
                                             </div>
                                         ))}
+
+                                        {dayTimeOff.length > 0 && (
+                                            <div className="mt-1 inline-flex items-center gap-1">
+                                                <span className="h-2 w-2 rounded-full bg-amber-400" />
+                                                <span className="text-[10px] text-amber-900">
+                                                    Time off
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </Button>
@@ -265,22 +364,40 @@ export default function page({ params }: { params: Promise<{ id: string }> }) {
                 </CardHeader>
 
                 <CardContent className='flex flex-col gap-3'>
-                {selectedDate && selectedDayShifts.length > 0 ? (
+                {selectedDate && selectedDayEntries.length > 0 ? (
                     <div className="space-y-3">
-                    {selectedDayShifts.map((shift) => (
+                    {selectedDayEntries.map((entry) => (
                         <div
-                        key={shift.id}
+                        key={`${entry.kind}-${entry.id}`}
                         className="p-4 rounded-lg border bg-card space-y-2"
                         >   
-                            {/* Shift card */}
+                            {entry.kind === 'shift' ? (
                             <div className="flex justify-between text-sm">
                                 <span className="font-medium">
-                                    {shift.startTime} - {shift.endTime}
+                                    {entry.startTime} - {entry.endTime}
                                 </span>
                                 <span className="text-xs text-muted-foreground">
                                     Shift
                                 </span>
                             </div>
+                            ): (
+                                // Time Off Card
+                                <>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="font-medium">
+                                            Time off – {entry.requesterName}
+                                        </span>
+                                        <span className="text-xs text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                                            Time off
+                                        </span>
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                        {entry.startDate} – {entry.endDate}
+                                    </div>
+                                </>
+                            )}
+                            
+                            
                         </div>
                     ))}
                     </div>
