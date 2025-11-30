@@ -21,6 +21,100 @@ import { useAuth } from "@clerk/nextjs";
 import { useParams } from "next/navigation";
 import { createApiClient } from "@scrubin/api-client";
 
+function MeetingRequests({ workspaceId }: { workspaceId: string }) {
+    const [meetings, setMeetings] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!workspaceId) return;
+        (async () => {
+            try {
+                setLoading(true);
+                const res = await fetch(`/api/workspaces/${workspaceId}/meetings`);
+                if (!res.ok) throw new Error("Failed to load meetings");
+                const data = await res.json();
+                setMeetings(data.meetings || []);
+            } catch (err) {
+                console.error(err);
+                setError(err instanceof Error ? err.message : "Failed to load meetings");
+            } finally {
+                setLoading(false);
+            }
+        })();
+    }, [workspaceId]);
+
+    const handleVote = async (meetingId: number, vote: "YES" | "NO") => {
+        try {
+            await fetch(`/api/workspaces/${workspaceId}/meetings/${meetingId}/respond`, {
+                method: "POST",
+                headers: { "Content-Type" : "application/json" },
+                body: JSON.stringify({ response: vote }),
+            });
+            setMeetings((prev) =>
+                prev.map((m) =>
+                    m.id === meetingId
+                        ? { ...m, attendees: { ...m.attendees, [vote.toLowerCase()]: ["You"] } } 
+                        : m
+                )
+            );
+        } catch (err) {
+            console.error(err);
+            alert("Failed to submit response");
+        }
+    };
+
+    if (loading) return <p className="text-gray-400 text-sm">Loading meetings...</p>;
+  if (error)
+    return (
+      <div className="text-red-400 bg-red-950 border border-red-700 rounded p-3 text-sm">
+        Error: {error}
+      </div>
+    );
+
+  if (meetings.length === 0)
+    return <p className="text-gray-400 text-sm">No meeting requests available.</p>;
+
+  return (
+    <div className="w-1/2 space-y-4">
+      {meetings.map((m) => (
+        <Card key={m.id} className="bg-zinc-900 border border-zinc-800 p-4">
+          <div className="flex justify-between items-start">
+            <CardTitle className="text-lg">{m.description}</CardTitle>
+            <Badge>{m.status}</Badge>
+          </div>
+          <CardContent className="mt-3 space-y-2 text-sm text-gray-400">
+            <p>
+              <span className="font-medium text-white">Date: </span>
+              {m.date} at {m.time}
+            </p>
+            <p>
+              <span className="font-medium text-white">Location: </span>
+              {m.location}
+            </p>
+          </CardContent>
+          <div className="flex gap-2 mt-4">
+            <Button
+              className="bg-green-600 hover:bg-green-700"
+              onClick={() => handleVote(m.id, "YES")}
+              size="sm"
+            >
+              ✅ Yes
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => handleVote(m.id, "NO")}
+              size="sm"
+            >
+              ❌ No
+            </Button>
+          </div>
+        </Card>
+      ))}
+    </div>
+    );
+}
+
 export default function Page() {
     type DecisionStatus = "pending" | "approved" | "denied";
     type BaseReq = {
@@ -198,6 +292,7 @@ export default function Page() {
                 <TabsList>
                     <TabsTrigger className="p-4" value="incoming-requests">Incoming Requests</TabsTrigger>
                     <TabsTrigger className="p-4" value="outgoing-requests">Outgoing Requests</TabsTrigger>
+                    <TabsTrigger className="p-4" value="meeting-requests">Meeting Requests</TabsTrigger>
                 </TabsList>
 
                 <TabsContent className="w-full flex justify-center" value="incoming-requests">
@@ -325,6 +420,10 @@ export default function Page() {
                             </Card>
                         ))}
                     </div>
+                </TabsContent>
+
+                <TabsContent className="w-full flex justify-center" value="meeting-requests">
+                    <MeetingRequests workspaceId={id} />
                 </TabsContent>
 
             </Tabs>
