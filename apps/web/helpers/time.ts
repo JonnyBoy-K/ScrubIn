@@ -6,6 +6,7 @@ import {
     format,
     isDate,
     parseISO,
+    differenceInMinutes,
 } from 'date-fns'; 
 
 import dayjs from 'dayjs';
@@ -49,7 +50,7 @@ export function makeWeek(anchor: Date, weekStartsOn = WEEK_START): Week {
  * @param weekStartsOn first day of week (defaults to WEEK_START)
  * @returns the recalculated week structure for the new anchor
  */
-export function moveWeek(anchor: Date, offset: number, weekStartsOn: Day = WEEK_START): Week {
+export function moveWeek(anchor: Date, offset: number): Week {
     const nextAnchor = addWeeks(anchor, offset);
     return makeWeek(nextAnchor); 
 }
@@ -59,7 +60,7 @@ export function moveWeek(anchor: Date, offset: number, weekStartsOn: Day = WEEK_
  * @param w is the Week object that contains the current week. 
  * @returns a formated string based on the week. 
  */
-export function weekLabel(w: Week): String {
+export function weekLabel(w: Week): string {
     const sameYear = format(w.start, "yyyy") === format(w.end, "yyyy");
     const sameMonth = format(w.start, "MM") === format(w.end, "yyyy"); 
     if (sameYear && sameMonth) return `${format(w.start, "MMM d")} , ${format(w.end, "d")} , ${format(w.end, "yyyy")}`;
@@ -94,3 +95,12 @@ export const formatTimeRange = (
   const endDate = ensureDate(end);
   return `${format(startDate, "h:mm a")} - ${format(endDate, "h:mm a")}`;
 };
+
+export function formatDurationHM(start: Date, end: Date, breakMinutes=0) {
+  const totalMinutes = Math.max(0, differenceInMinutes(end, start)-breakMinutes);
+
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  return `${hours}h ${minutes ? `${minutes}m`: ""}`;
+}

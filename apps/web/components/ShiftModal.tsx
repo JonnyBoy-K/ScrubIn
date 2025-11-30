@@ -1,23 +1,20 @@
 
 import React, { useState, useEffect } from 'react'
 import { Modal, Button, Select, DatePicker, TimePicker, Alert } from 'antd';
-import {Calendar, User, Clock9, MapPin, Trash, Edit, Send} from 'lucide-react';
+import {Calendar, UserIcon, Clock9, MapPin, Trash, Edit, Send} from 'lucide-react';
 import {formatLongDate, formatTimeRange} from '../helpers/time';
 import { useApiClient } from '@/hooks/useApiClient';
 import dayjs, {Dayjs} from 'dayjs';
-
-type Shift = { id: number; startTime: string; endTime: string; breakDuration: number | null };
-type User = { id: string; firstName: string; lastName?: string | null };
-type Member = { id: number; firstName: string; lastName?: string | null };
+import type { Shift, User } from '@scrubin/schemas';
 
 type ShiftModalProps  = {
     user: User;
     shift: Shift;
-    workspaceId: Number | null;
+    workspaceId: number | null;
     isVisiable: boolean;   
     onDelete?: (shiftId: number) => void | Promise<void>;
     setIsVisiable: React.Dispatch<React.SetStateAction<boolean>>;
-    users: Member[] | [];
+    users: User[] | [];
     onSuccess: () => void | Promise<void>; 
 }
 
@@ -29,7 +26,7 @@ function ShiftModal({user, shift, onDelete, workspaceId, isVisiable, setIsVisiab
   const [openModal, setOpenModal] = useState<boolean>(false);
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [date, setDate] = useState<Dayjs | null>(dayjs(shift.startTime));
-  const [err, setErr] = useState<String | undefined>(undefined);
+  const [err, setErr] = useState<string | undefined>(undefined);
   const [timeRange, setTimeRange] = useState<[Dayjs, Dayjs] | null>([
     dayjs(shift.startTime),
     dayjs(shift.endTime),
@@ -161,7 +158,7 @@ function ShiftModal({user, shift, onDelete, workspaceId, isVisiable, setIsVisiab
           <div className='flex flex-col gap-5'>
             <div className='flex flex-row gap-3 items-center'>
                 <div className='p-2 bg-gray-100 rounded-lg'>
-                    <User />
+                    <UserIcon />
                 </div>
                 <div className='flex flex-col'>
                   <span className='text-md  text-gray-600'>
@@ -174,7 +171,7 @@ function ShiftModal({user, shift, onDelete, workspaceId, isVisiable, setIsVisiab
                   style={{ width: 200 }}
                   placeholder="Select Employee"
                   onChange={(value) => setEditPayload((prev) => ({...prev, userId: value}))}
-                  options={users?.map((user: { id: any; firstName: any; }) => ({
+                  options={users.map((user: User) => ({
                   value: String(user.id),
                   label: user.firstName,
                 })) ?? []}

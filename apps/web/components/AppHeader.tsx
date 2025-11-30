@@ -3,13 +3,12 @@ import {
   Calendar,
   LayoutDashboard,
   UsersRound,
-  UserRoundCog,
   Send,
   Bell,
   Bolt,
 } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
-import { useParams, usePathname } from "next/navigation";
+import { useParams } from "next/navigation";
 
 export default function AppHeader() {
   const { id } = useParams<{ id: string }>();
@@ -37,10 +36,6 @@ export default function AppHeader() {
           <Link href={href_team} className="flex flex-row gap-2 items-center bg-gray-100 p-2 rounded-lg cursor-pointer hover:bg-gray-200">
             <UsersRound size={20} color="gray" />
             <span className="text-gray-500 text-md">Team</span>
-          </Link>
-          <Link href={href_roles} className="flex flex-row gap-2 items-center bg-gray-100 p-2 rounded-lg cursor-pointer hover:bg-gray-200">
-            <UserRoundCog size={20} color="gray" />
-            <span className="text-gray-500 text-md">Roles</span>
           </Link>
           <Link href={href_requests} className="flex flex-row gap-2 items-center bg-gray-100 p-2 rounded-lg cursor-pointer hover:bg-gray-200">
             <Send size={20} color="gray" />

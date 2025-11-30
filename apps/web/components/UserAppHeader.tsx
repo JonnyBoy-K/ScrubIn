@@ -2,15 +2,13 @@ import Link from "next/link";
 import {
     Calendar,
     LayoutDashboard,
-    UsersRound,
-    UserRoundCog,
     Send,
     Bell,
     Bolt,
     CalendarFold,
 } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
-import { useParams, usePathname } from "next/navigation";
+import { useParams } from "next/navigation";
 
 export default function UserAppHeader() {
     const { id } = useParams<{ id: string }>();

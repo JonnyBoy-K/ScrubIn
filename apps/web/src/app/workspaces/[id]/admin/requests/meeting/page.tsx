@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import MeetingModal, { MeetingForModal } from "../../../../../../../components/MeetingModal";
 
-const API = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000";
+const API = process.env.NEXT_PUBLIC_API_BASE_URL as string;
 
 /**** Types ****/
 
@@ -124,7 +124,7 @@ export default function MeetingRequestsPage() {
 
         // Backend now returns:
         // { meetings: [{ id, location, description, date, time, status, attendees: { yes, no, pending } }, ...] }
-        const mapped: Meeting[] = (data.meetings ?? []).map((m: any) => ({
+        const mapped: Meeting[] = (data.meetings ?? []).map((m: Meeting) => ({
             id: String(m.id),
             location: m.location ?? "No location",
             description: m.description ?? "",
@@ -143,9 +143,9 @@ export default function MeetingRequestsPage() {
         if (!alive) return;
         setMeetings(mapped);
         setSelectedId((prev) => prev || mapped[0]?.id || "");
-      } catch (e: any) {
+      } catch (err) {
         if (!alive) return;
-        setError(e?.message ?? "Failed to load meetings");
+        setError(err instanceof Error ? err.message : "Failed to load meetings");
       } finally {
         if (!alive) return;
         setLoading(false);
@@ -197,9 +197,11 @@ export default function MeetingRequestsPage() {
         setSelectedId(nextSelected);
         return next;
       });
-    } catch (e: any) {
+    } catch (err) {
       setError(
-        `Failed to delete meeting${e?.message ? `: ${e.message}` : ""}`
+        `Failed to delete meeting${
+          err instanceof Error ? `: ${err.message}` : ""
+        }`
       );
     } finally {
       closeDeleteConfirm();
@@ -245,10 +247,10 @@ export default function MeetingRequestsPage() {
           m.id === meetingId ? { ...m, status: action } : m
         )
       );
-    } catch (e: any) {
+    } catch (err) {
       setError(
         `Failed to ${action === "FINALIZED" ? "Finalize" : "Cancel"} meeting${
-          e?.message ? `: ${e.message}` : ""
+          err instanceof Error ? `: ${err.message}` : ""
         }`
       );
     } finally {
@@ -560,7 +562,7 @@ export default function MeetingRequestsPage() {
             <AlertDialogDescription className="text-gray-700">
               {statusConfirm.action === "FINALIZED"
                 ? "Finalizing this meeting confirms that it will go ahead as scheduled based on the current responses."
-                : "Cancelling this meeting will mark it as cancelled and notify attendees according to your notification settings."}
+                : "Cancelling this meeting will mark it as cancelled and notify attendees accordingly."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

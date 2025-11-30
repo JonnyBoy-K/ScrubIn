@@ -20,9 +20,10 @@ import dayjs, { Dayjs } from "dayjs";
 import { TimePicker } from "antd";
 
 type MemberOption = {
-  id: string;   // UserWorkspaceMembership.id
-  userId: string; // User.id (Clerk)
-  name: string;
+  id: string;            // UserWorkspaceMembership.id (stringified)
+  userId: string;        // User.id (Clerk)
+  firstName: string;
+  lastName: string;
   role: string;
 };
 
@@ -46,7 +47,7 @@ type Props = {
   onSaved: () => void;
 };
 
-const API = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000";
+const API = process.env.NEXT_PUBLIC_API_BASE_URL as string;
 
 export default function MeetingModal({
   open,
@@ -81,23 +82,29 @@ export default function MeetingModal({
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
 
+        // Clerk user id of the creator
         const creatorUserId =
           mode === "edit" && meeting ? meeting.createdById : currentUserId;
 
         const mapped: MemberOption[] = (data.members ?? [])
           .map((m: any) => ({
-            id: String(m.membershipId ?? m.id), // prefer membership id, fallback to user id
+            // membershipId (if backend sends it) or fallback to user id
+            id: String(m.membershipId ?? m.id),
             userId: String(m.userId ?? m.id),
-            name: `${m.firstName ?? ""} ${m.lastName ?? ""}`.trim() || "Unnamed",
+            firstName: m.firstName ?? "",
+            lastName: m.lastName ?? "",
             role: m.role ?? "Member",
           }))
-          .filter((m: MemberOption) =>
+          // filter out the creator by userId, not membershipId
+          .filter((m) =>
             creatorUserId ? String(m.userId) !== String(creatorUserId) : true
           );
 
         setMembers(mapped);
-      } catch (e: any) {
-        setError(e.message ?? "Failed to load members");
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to load members"
+        );
       }
     })();
   }, [open, workspaceId, getToken, mode, meeting, currentUserId]);
@@ -214,8 +221,8 @@ export default function MeetingModal({
 
       onSaved();
       onClose();
-    } catch (e: any) {
-      setError(e.message ?? "Failed to save meeting");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save meeting");
     } finally {
       setLoading(false);
     }
@@ -319,7 +326,7 @@ export default function MeetingModal({
                 value={time}
                 onChange={(val) => setTime(val)}
                 className="w-full"
-                minuteStep={5} // adjust if you want 15, etc.
+                minuteStep={5}
               />
             </div>
           </div>
@@ -335,20 +342,24 @@ export default function MeetingModal({
                   No members found for this workspace.
                 </div>
               ) : (
-                members.map((m) => (
-                  <label
-                    key={m.id}
-                    className="flex items-center gap-2 text-sm"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedMemberIds.includes(m.id)}
-                      onChange={() => toggleMember(m.id)}
-                    />
-                    <span>{m.name}</span>
-                    <span className="text-xs text-gray-500">· {m.role}</span>
-                  </label>
-                ))
+                members.map((m) => {
+                  const displayName =
+                    `${m.firstName} ${m.lastName}`.trim() || "Unnamed";
+                  return (
+                    <label
+                      key={m.id}
+                      className="flex items-center gap-2 text-sm"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedMemberIds.includes(m.id)}
+                        onChange={() => toggleMember(m.id)}
+                      />
+                      <span>{displayName}</span>
+                      <span className="text-xs text-gray-500">· {m.role}</span>
+                    </label>
+                  );
+                })
               )}
             </div>
           </div>

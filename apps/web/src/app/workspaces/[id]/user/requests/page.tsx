@@ -17,7 +17,7 @@ import { Plus } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuth, useUser } from "@clerk/nextjs";
+import { useAuth } from "@clerk/nextjs";
 import { useParams } from "next/navigation";
 import { createApiClient } from "@scrubin/api-client";
 
@@ -43,12 +43,11 @@ export default function Page() {
     type AnyRequest = TradeReq | TimeOffReq;
 
     const { getToken } = useAuth();
-    const { user } = useUser();
     const { id } = useParams<{ id: string }>();
     const apiClient = useMemo(
         () =>
             createApiClient({
-                baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000",
+                baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL as string,
                 getToken,
             }),
         [getToken]
@@ -84,9 +83,9 @@ export default function Page() {
                 if (!alive) return;
                 setIncoming((incomingRes?.requests ?? []) as AnyRequest[]);
                 setOutgoing((outgoingRes?.requests ?? []) as AnyRequest[]);
-            } catch (e: any) {
+            } catch (err) {
                 if (!alive) return;
-                setError(e?.message ?? "Failed to load requests");
+                setError(err instanceof Error ? err.message : "Failed to load requests");
             } finally {
                 if (!alive) return;
                 setLoading(false);

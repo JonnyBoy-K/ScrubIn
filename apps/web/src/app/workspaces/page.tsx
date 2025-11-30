@@ -4,25 +4,26 @@ import WorkspaceList from "../../../components/WorkspaceList";
 import { useAuth, UserButton } from "@clerk/nextjs";
 
 import { createApiClient } from "@scrubin/api-client";
+import type { Workspace } from "@scrubin/schemas";
 
 export default function Page() {
 
 
     const { getToken } = useAuth();
-    const [workspaces, setWorkspaces] = useState([]);
+    const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
     const apiClient = createApiClient({
-        baseUrl: "http://localhost:4000",
+        baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL as string,
         getToken
-    })
+    });
 
     useEffect(() => {
 
         (async () => {
             
-            const workspaces = await apiClient.getWorkspaces();
+            const workspaces: Workspace[] = await apiClient.getWorkspaces();
             setWorkspaces(workspaces)
         })();
-    }, [])
+    }, [apiClient])
     return (
         <div>
             <nav className="sticky top-0 z-50 border-b border-gray-200 bg-white">

@@ -14,9 +14,10 @@ model User {
   lastName                String?
   createdAt               DateTime                  @default(now())
   updatedAt               DateTime                  @updatedAt
-  UserWorkspaceMembership UserWorkspaceMembership[]
-  UserRoleMembership      UserRoleMembership[]
   Shift                   Shift[]
+  UserRoleMembership      UserRoleMembership[]
+  UserWorkspaceMembership UserWorkspaceMembership[]
+  ShiftRequests           ShiftRequest[]            @relation("RequestorRelation")
   timeOffRequests         TimeOffRequest[]
   meetingCreator          Meeting[]
 }
@@ -37,8 +38,9 @@ model Workspace {
   name            String
   adminId         String
   location        String
-  memberships     UserWorkspaceMembership[]
   roleMemberships UserRoleMembership[]
+  memberships     UserWorkspaceMembership[]
+  shiftRequests   ShiftRequest[]
   timeOffRequests TimeOffRequest[]
   meetings        Meeting[]
 }
@@ -52,6 +54,9 @@ model Shift {
   workspaceId    Int
   user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   timesheet Timesheet?
+  
+  lendedRequests     ShiftRequest[] @relation("Lended")
+  requestedRequests  ShiftRequest[] @relation("Requested")
 
 }
 
@@ -66,11 +71,10 @@ model Timesheet {
 
 }
 model Role {
-  id          Int    @id @default(autoincrement())
-  workspaceId Int
-  name        String
-  permissions Int    @default(0)
-
+  id                 Int                  @id @default(autoincrement())
+  workspaceId        Int
+  name               String
+  permissions        Int                  @default(0)
   UserRoleMembership UserRoleMembership[]
 }
 
@@ -85,32 +89,30 @@ model UserRoleMembership {
   userId      String
   workSpaceId Int
   roleId      Int
+  role        Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace   Workspace @relation(fields: [workSpaceId], references: [id], onDelete: Cascade)
-  role        Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
-}
-
-enum ApprovalStatus {
-  PENDING
-  APPROVED
-  DENIED
 }
 
 model ShiftRequest {
-  id                  Int             @id @default(autoincrement())
-  requestorId         String
+  id               Int       @id @default(autoincrement())
+  requestorId      String
+  workspaceId      Int
+  lendedShiftId    Int
+  requestedShiftId Int?
+  requestor        User      @relation("RequestorRelation", fields: [requestorId], references: [id], onDelete: Cascade)
+  workspace        Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  lendedShift      Shift     @relation("Lended", fields: [lendedShiftId], references: [id], onDelete: Cascade)
+  requestedShift   Shift?    @relation("Requested", fields: [requestedShiftId], references: [id])
   requestedUserId     String
-  workspaceId         Int
-  lendedShiftId       Int
-  requestedShiftId    Int?
   approvedByRequested ApprovalStatus  @default(PENDING)
-  approvedByManager   ApprovalStatus?
+  approvedByManager   ApprovalStatus  @default(PENDING)
 }
 
 model Invitation {
   id          String    @id @default(uuid())
   workspaceId Int
-  expiresAt   DateTime? @default(dbgenerated("now() + interval '1 day'")) @db.Timestamptz(6)
+  expiresAt   DateTime? @default(dbgenerated("(now() + '1 day'::interval)")) @db.Timestamptz(6)
   acceptedAt  DateTime?
 }
 
@@ -138,6 +140,12 @@ enum MeetingResponse {
   PENDING
   YES
   NO
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 model Meeting {

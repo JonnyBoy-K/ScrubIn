@@ -16,19 +16,7 @@ import { useParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { useApiClient } from "@/hooks/useApiClient"
 import { format, startOfWeek, endOfWeek, isToday, isTomorrow, parseISO } from "date-fns"
-
-type Shift = {
-  id: number
-  startTime: string
-  endTime: string
-  breakDuration: number
-  timesheet?: {
-    clockInTime: string | null
-    clockOutTime: string | null
-    startBreakTime: string | null
-    endBreakTime: string | null
-  } | null
-}
+import type { Shift } from "@scrubin/schemas"
 
 export default function UpcomingScheduleCard() {
   const { userId } = useAuth()
@@ -109,9 +97,9 @@ export default function UpcomingScheduleCard() {
         userShifts.sort((a, b) => a.startTime.getTime() - b.startTime.getTime())
 
         setShifts(userShifts)
-      } catch (e: any) {
+      } catch (err) {
         if (!alive) return
-        setError(e?.message ?? "Failed to load shifts")
+        setError(err instanceof Error ? err.message : "Failed to load shifts")
       } finally {
         if (alive) {
           setLoading(false)

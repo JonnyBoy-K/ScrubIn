@@ -3,22 +3,24 @@ import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
-import { prisma } from './db'
+import { prisma } from './db.js'
 import { clerkMiddleware } from '@clerk/express'
 import { verifyWebhook } from '@clerk/express/webhooks'
 
-import usersRouter from './routes/users'
-import workspacesRouter from './routes/workspaces'
-import permissionsRouter from './routes/permissions'
-import shiftsRouter from './routes/shifts'
-import invitationsRouter from './routes/invitations'
-import workspaceUsersRouter from './routes/workspaceUsers'
-import workspaceMembershipsRouter from './routes/workspaceMemberships'
-import rolesRouter from './routes/roles'
-import roleMembershipsRouter from './routes/roleMemberships'
-import shiftRequestsRouter from './routes/shiftRequests'
-import meetingsRouter from './routes/meetings'
-import timeOffRequestsRouter from "./routes/timeOffRequests";
+import usersRouter from './routes/users.js'
+import workspacesRouter from './routes/workspaces.js'
+import permissionsRouter from './routes/permissions.js'
+import shiftsRouter from './routes/shifts.js'
+import invitationsRouter from './routes/invitations.js'
+import workspaceUsersRouter from './routes/workspaceUsers.js'
+import workspaceMembershipsRouter from './routes/workspaceMemberships.js'
+import rolesRouter from './routes/roles.js'
+import roleMembershipsRouter from './routes/roleMemberships.js'
+import shiftRequestsRouter from './routes/shiftRequests.js'
+import meetingsRouter from './routes/meetings.js'
+import timeOffRequestsRouter from './routes/timeOffRequests.js'
+import timesheetsRouter from './routes/timesheets.js'
+
 
 const app = express()
 
@@ -27,7 +29,6 @@ app.use(cors({ origin: '*' }))
 app.use(express.json())
 app.use(morgan('dev'))
 app.use(clerkMiddleware())
-
 
 app.use('/users', usersRouter)
 app.use('/workspaces', workspacesRouter)
@@ -42,7 +43,8 @@ app.use('/workspaces/:workspaceId/roles', rolesRouter)
 app.use('/workspaces/:workspaceId/role-memberships', roleMembershipsRouter)
 app.use('/workspaces/:workspaceId/shift-requests', shiftRequestsRouter)
 app.use('/workspaces/:workspaceId/meetings', meetingsRouter)
-app.use("/workspaces/:workspaceId/timeoff-requests", timeOffRequestsRouter);
+app.use('/workspaces/:workspaceId/timeoff-requests', timeOffRequestsRouter)
+app.use('/workspaces/:workspaceId/timesheets', timesheetsRouter)
 
 app.post('/clerk/webhook', async (req, res) => {
     const evt = await verifyWebhook(req)

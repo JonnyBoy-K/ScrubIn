@@ -11,13 +11,13 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     const { id } = await params;
 
     const apiClient = createApiClient({
-        baseUrl: "http://localhost:4000",
+        baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL as string,
         getToken: async () => await getToken()
     });
 
     try {
         const data = await apiClient.getInvitation(id);
-        const { workspaceOwnerName, workspaceOwnerEmail, workspaceName, invitationId, workspaceId } = data;
+        const { workspaceOwnerName, workspaceOwnerEmail, workspaceName, invitationId } = data;
 
         return (
             <main className="min-h-screen flex flex-col bg-white">
@@ -28,7 +28,6 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                             workspaceOwnerEmail={workspaceOwnerEmail}
                             workspaceOwnerName={workspaceOwnerName}
                             invitationId={invitationId}
-                            workspaceId={workspaceId}
                         />
 
                     </div>
@@ -36,6 +35,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             </main>
         );
     } catch (error) {
+        console.error(error)
         return redirect("/not-found");
     }
 }

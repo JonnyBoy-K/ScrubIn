@@ -20,7 +20,7 @@ import {
 import { useAuth } from "@clerk/nextjs";
 import { useParams } from "next/navigation";
 
-const API = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000";
+const API = process.env.NEXT_PUBLIC_API_BASE_URL as string;
 
 /**** Types ****/
 
@@ -124,9 +124,9 @@ export default function ShiftRequestsPage() {
       if (!alive) return;
       setRequests(combined);
       setSelectedId(combined[0]?.id ?? "");
-    } catch (e: any) {
+    } catch (err) {
       if (!alive) return;
-      setError(e?.message ?? "Failed to load requests");
+      setError(err instanceof Error ? err.message : "Failed to load requests");
     } finally {
       if (!alive) return;
       setLoading(false);
@@ -190,10 +190,10 @@ export default function ShiftRequestsPage() {
 
       setRequests(nextRequests);
       setSelectedId(nextSelected);
-    } catch (e: any) {
+    } catch (err) {
       setError(
         `Failed to ${confirm.action} request${
-          e?.message ? `: ${e.message}` : ""
+          err instanceof Error ? `: ${err.message}` : ""
         }`
       );
     } finally {
@@ -429,8 +429,8 @@ export default function ShiftRequestsPage() {
             </AlertDialogTitle>
             <AlertDialogDescription className="text-gray-700">
               {confirm.action === "approve"
-                ? "This will mark the request as approved. You can change it later, but it may affect scheduling."
-                : "This will mark the request as denied. You can change it later if needed."}
+                ? "This will mark the request as approved. You cannot change it later."
+                : "This will mark the request as denied. You cannot change it later."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
