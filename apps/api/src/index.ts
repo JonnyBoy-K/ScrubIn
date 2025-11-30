@@ -19,6 +19,8 @@ import roleMembershipsRouter from './routes/roleMemberships.js'
 import shiftRequestsRouter from './routes/shiftRequests.js'
 import meetingsRouter from './routes/meetings.js'
 import timeOffRequestsRouter from './routes/timeOffRequests.js'
+import timesheetsRouter from './routes/timesheets.js'
+
 
 const app = express()
 
@@ -42,6 +44,7 @@ app.use('/workspaces/:workspaceId/role-memberships', roleMembershipsRouter)
 app.use('/workspaces/:workspaceId/shift-requests', shiftRequestsRouter)
 app.use('/workspaces/:workspaceId/meetings', meetingsRouter)
 app.use('/workspaces/:workspaceId/timeoff-requests', timeOffRequestsRouter)
+app.use('/workspaces/:workspaceId/timesheets', timesheetsRouter)
 
 app.post('/clerk/webhook', async (req, res) => {
     const evt = await verifyWebhook(req)
