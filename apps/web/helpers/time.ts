@@ -6,6 +6,7 @@ import {
     format,
     isDate,
     parseISO,
+    differenceInMinutes,
 } from 'date-fns'; 
 
 import dayjs from 'dayjs';
@@ -94,3 +95,12 @@ export const formatTimeRange = (
   const endDate = ensureDate(end);
   return `${format(startDate, "h:mm a")} - ${format(endDate, "h:mm a")}`;
 };
+
+export function formatDurationHM(start: Date, end: Date, breakMinutes=0) {
+  const totalMinutes = Math.max(0, differenceInMinutes(end, start)-breakMinutes);
+
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  return `${hours}h ${minutes ? `${minutes}m`: ""}`;
+}
