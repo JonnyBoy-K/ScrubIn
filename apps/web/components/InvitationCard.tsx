@@ -1,5 +1,5 @@
 "use client"
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
     Card,
     CardContent,
@@ -24,10 +24,14 @@ export default function InvitationCard({ workspaceName, workspaceOwnerName, work
     const [isLoading, setIsLoading] = useState(false);
     const { getToken } = useAuth();
     
-    const apiClient = createApiClient({
-        baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL as string,
-        getToken
-    });
+	const apiClient = useMemo(
+		() =>
+			createApiClient({
+				baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL as string,
+				getToken,
+			}),
+		[getToken],
+	);
 
     const clickHandler = async () => {
         setIsLoading(true);

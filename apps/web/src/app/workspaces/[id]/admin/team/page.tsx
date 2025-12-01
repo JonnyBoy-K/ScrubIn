@@ -140,10 +140,14 @@ export default function TeamPage() {
         })();
     }
 
-    const apiClient = createApiClient({
-        baseUrl: API,
-        getToken,
-    });
+	const apiClient = React.useMemo(
+		() =>
+			createApiClient({
+				baseUrl: API,
+				getToken,
+			}),
+		[API, getToken],
+	);
 
     const [invitationLink, setInvitationLink] = useState("");
     const [addOpen, setAddOpen] = useState(false);

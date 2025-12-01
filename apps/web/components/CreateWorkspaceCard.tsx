@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
     Card,
     CardHeader,
@@ -25,10 +25,14 @@ export default function CreateWorkspaceCard() {
     const [location, setLocation] = useState("");
     const { getToken } = useAuth();
 
-    const apiClient = createApiClient({
-        baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL as string,
-        getToken
-    });
+	const apiClient = useMemo(
+		() =>
+			createApiClient({
+				baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL as string,
+				getToken,
+			}),
+		[getToken],
+	);
 
     const handleWorkspaceCreation = async () => {
         try {
