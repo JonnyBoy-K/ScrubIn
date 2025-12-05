@@ -264,6 +264,12 @@ export function createApiClient({ baseUrl, getToken }) {
 				method: 'GET',
 				path: `/workspaces/${workspaceId}/timesheets/users/${userId}`,
 				params
+			}),
+		respondToMeeting: (workspaceId, meetingId, data) =>
+			request({
+				method: 'POST',
+				path: `/workspaces/${workspaceId}/meetings/${meetingId}/respond`,
+				body: data
 			})
 	};
 }
