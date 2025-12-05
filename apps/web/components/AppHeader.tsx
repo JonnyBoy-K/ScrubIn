@@ -6,6 +6,7 @@ import {
   Send,
   Bell,
   Bolt,
+  Clock
 } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
 import { useParams } from "next/navigation";
@@ -39,6 +40,11 @@ export default function AppHeader() {
           <Link href={href_requests} className="flex flex-row gap-2 items-center bg-gray-100 p-2 rounded-lg cursor-pointer hover:bg-gray-200">
             <Send size={20} color="gray" />
             <span className="text-gray-500 text-md">Requests</span>
+          </Link>
+
+          <Link href={href_requests} className="flex flex-row gap-2 items-center bg-gray-100 p-2 rounded-lg cursor-pointer hover:bg-gray-200">
+            <Clock size={20} color="gray" />
+            <span className="text-gray-500 text-md">Timesheet</span>
           </Link>
         </div>
       </div>
