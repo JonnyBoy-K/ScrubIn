@@ -1,11 +1,22 @@
 // Shared application DTO types
-// Use as `import type { ShiftDto, TimesheetDto } from '@scrubin/schemas'`
 
 export type Timesheet = {
-	clockInTime: string | null;
-	clockOutTime: string | null;
-	startBreakTime: string | null;
-	endBreakTime: string | null;
+    id: number;
+    clockInTime: string | null;
+    clockOutTime: string | null;
+    startBreakTime: string | null;
+    endBreakTime: string | null;
+    shift: {
+        id: number;
+        startTime: string;
+        endTime: string;
+        breakDuration: number | null;
+        user?: {
+            id: string;
+            firstName?: string | null;
+            lastName?: string | null;
+        };
+    };
 };
 
 // Primary Shift DTO shape used by web UI (Timesheet is separate table, optionally included)

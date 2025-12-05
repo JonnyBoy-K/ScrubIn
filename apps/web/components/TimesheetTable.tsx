@@ -2,15 +2,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { differenceInMinutes, format } from "date-fns";
 import React from "react";
 import { formatDurationHM } from "../helpers/time";
+import { Timesheet } from "@scrubin/schemas";
 
-export default function TimesheetTable({ timesheets }) {
-    const formatTimesheetWorkDuration = (timesheet) => {
+export default function TimesheetTable({ timesheets }: { timesheets: Timesheet[] }) {
+    const formatTimesheetWorkDuration = (timesheet: Timesheet) => {
         if (!timesheet.clockInTime || !timesheet.clockOutTime) return ""
 
         const breakDuration = (timesheet.startBreakTime && timesheet.endBreakTime) ?
-        differenceInMinutes(timesheet.endBreakTime, timesheet.startBreakTime): 0;
+        differenceInMinutes(new Date(timesheet.endBreakTime), new Date(timesheet.startBreakTime)) : 0;
 
-        return formatDurationHM(timesheet.clockInTime, timesheet.clockOutTime, breakDuration);
+        return formatDurationHM(new Date(timesheet.clockInTime), new Date(timesheet.clockOutTime), breakDuration);
     }
     return (
         <Table className="mt-4">
@@ -26,15 +27,17 @@ export default function TimesheetTable({ timesheets }) {
             </TableHeader>
 
             <TableBody>
-                {timesheets && timesheets.map((timesheet) => {
-                    <TableRow>
-                        <TableCell>{timesheet.shift.startTime.toLocalDateString()}</TableCell>
-                        <TableCell>{format(timesheet.clockInTime, "hh:mm a") ?? "_ _"}</TableCell>
-                        <TableCell>{format(timesheet.startBreakTime, "hh:mm a") ?? "_ _"}</TableCell>
-                        <TableCell>{format(timesheet.endBreakTime, "hh:mm a") ?? "_ _"}</TableCell>
-                        <TableCell>{format(timesheet.clockOutTime, "hh:mm a") ?? "_ _"}</TableCell>
-                        <TableCell>{formatTimesheetWorkDuration(timesheet)}</TableCell>
-                    </TableRow>
+                {timesheets && timesheets.map((timesheet: Timesheet) => {
+                    return (
+                        <TableRow key={timesheet.id}>
+                            <TableCell>{new Date(timesheet.shift.startTime).toLocaleDateString()}</TableCell>
+                            <TableCell>{timesheet.clockInTime ? format(new Date(timesheet.clockInTime), "hh:mm a") : "_ _"}</TableCell>
+                            <TableCell>{timesheet.startBreakTime ? format(new Date(timesheet.startBreakTime), "hh:mm a") : "_ _"}</TableCell>
+                            <TableCell>{timesheet.endBreakTime ? format(new Date(timesheet.endBreakTime), "hh:mm a") : "_ _"}</TableCell>
+                            <TableCell>{timesheet.clockOutTime ? format(new Date(timesheet.clockOutTime), "hh:mm a") : "_ _"}</TableCell>
+                            <TableCell>{formatTimesheetWorkDuration(timesheet)}</TableCell>
+                        </TableRow>
+                    )
                 })}
             </TableBody>
         </Table>
