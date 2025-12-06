@@ -254,7 +254,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                     onSuccess={handleShiftReload}
                 />
             )}
-            <SingleAddShiftModal open={openAddShift} setOpen={setOpenAddShift} user={selectedUser} selectedDay={selectedDay} users={users}/>
+            <SingleAddShiftModal open={openAddShift} setOpen={setOpenAddShift} user={selectedUser} selectedDay={selectedDay} users={users} workspaceId={workspaceId}/>
             <AddShiftModal open={isModal} setOpen={setIsModal} users={users} workspaceId={Number(id)} onSuccess={handleShiftReload} />
         </div>
     );
