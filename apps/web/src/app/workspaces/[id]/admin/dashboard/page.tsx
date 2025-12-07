@@ -135,6 +135,33 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
         getShifts(); // Refetch when workspace changes or week window moves
     }, [hasValidWorkspace, getUsers, getShifts]);
 
+    useEffect(() => {
+        if (!hasValidWorkspace) return;
+        if (typeof window === "undefined") return;  
+        const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/workspaces/${workspaceId}/shifts/stream`;
+        const source = new EventSource(url);
+
+        const handleMessage = (event: MessageEvent<string>) => {
+            const data = JSON.parse(event.data);
+            if (data.type === "refresh") {
+                getShifts(); 
+            }
+
+            return;
+        };
+
+        source.addEventListener('message', handleMessage); 
+
+        source.onerror = (err) => {
+            console.log(err);
+        }
+
+        return () => {
+            source.removeEventListener('message', handleMessage);
+            source.close(); 
+        }
+    }, [hasValidWorkspace, workspaceId, getShifts]); 
+
     return (
         <div className="min-h-screen border-b border-border bg-card px-6 py-4">
             {/* Navigation */}

@@ -69,13 +69,14 @@ const AddShiftModal: React.FC<AddShiftModalProps> = ({ open, setOpen, users, wor
       setDates(null);
       setTimeRange(null);
       
-      if (onSuccess) {
-        await onSuccess();
-      }
-      else {
-        setOpen(false); 
-      }
+      // if (onSuccess) {
+      //   //await onSuccess();
+      // }
+      // else {
+        
+      // }
 
+      setOpen(false); 
       setIsSubmitting(false);
 
     } catch (e) {
