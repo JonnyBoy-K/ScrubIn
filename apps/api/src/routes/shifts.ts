@@ -1,8 +1,8 @@
 import express from 'express'
 import { prisma } from '../db.js'
 import type { Request, Response } from 'express'
-import type { Prisma } from '@prisma/client'
-import { getWorkspaceChannel } from '../event.js'
+import { type Prisma } from '@prisma/client'
+import { emitUpdateShift } from './events.js'
 
 const router = express.Router({ mergeParams: true })
 type ShiftWithUserAndTimesheet = Prisma.ShiftGetPayload<{
@@ -12,25 +12,6 @@ type ShiftWithUserAndTimesheet = Prisma.ShiftGetPayload<{
     };
   }>;
 
-router.get('/stream', (req, res) => {
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-
-    const workspaceId = Number(req.params.workspaceId); 
-
-    const channel = getWorkspaceChannel(workspaceId); 
-    const handler = (payload: any) => {
-        res.write(`data: ${JSON.stringify(payload)}\n\n`);
-    }
-
-    channel.on('shift-reload', handler);
-
-    req.on('close', () => {
-        channel.off('shift-reload', handler);
-        res.end(); 
-    });
-}); 
 
 router.get(
     '/',
@@ -134,7 +115,7 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
     try {
         const { workspaceId, user, shifts, breakDuration } = req.body
-        const channel = getWorkspaceChannel(Number(workspaceId)); 
+        
 
         // Reject invalid ISO strings
         const rows = shifts.map(
@@ -159,7 +140,7 @@ router.post('/', async (req, res) => {
         )
 
         const result = await prisma.shift.createMany({ data: rows });
-        channel.emit('shift-reload', {type: "refresh"}); 
+        emitUpdateShift(workspaceId);  
         console.log(result.count)
         res.status(201).json({ inserted: result.count })
     } catch (error) {
@@ -171,7 +152,7 @@ router.post('/', async (req, res) => {
 router.patch('/:id', async (req, res) => {
     try {
         const {id, workspaceId} = Number(req.params)
-        const channel = getWorkspaceChannel(Number(workspaceId)); 
+        
         if (!Number.isInteger(id)) return res.status(400).json({ error: 'Invalid Id' })
 
         const shift = await prisma.shift.findUnique({ where: { id: id } })
@@ -216,8 +197,8 @@ router.patch('/:id', async (req, res) => {
         const updated = await prisma.shift.update({
             where: { id: id },
             data: updateData,
-        })
-        channel.emit('shift-reload', {type: "refresh"}); 
+        }) 
+        emitUpdateShift(workspaceId);
         return res.status(200).json(updated)
     } catch (error) {
         console.log('Error in shifts route', error)
@@ -229,11 +210,11 @@ router.delete('/:id', async (req, res) => {
     try {
         const id = Number(req.params.id);
         const workspaceId = Number(req.params.workspaceId);
-        const channel = getWorkspaceChannel(Number(workspaceId)); 
+        
          
         if (!Number.isInteger(id)) return res.status(400).json({ error: 'Invalid id' })
         await prisma.shift.delete({ where: { id: Number(id) } })
-        channel.emit('shift-reload', {type: "refresh"});
+        emitUpdateShift(workspaceId);
         res.status(200).json({ message: 'Shift deleted' })
     } catch (err) {
         console.log('Error in shifts route', err)

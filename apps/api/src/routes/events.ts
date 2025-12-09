@@ -3,8 +3,7 @@ import { prisma } from '../db.js'
 import type { Response } from 'express'
 
 import { randomUUID } from 'crypto'
-import { getAuth, SMSMessage } from '@clerk/express'
-import { o } from 'framer-motion/dist/types.d-BJcRxCew.js'
+import { getAuth } from '@clerk/express'
 
 type Client = {
     res: Response
@@ -125,13 +124,13 @@ router.get('/stream', async (req, res) => {
 
 export function emitUpdateShift(workspaceId: number) {
     broadcastToWorkspace(workspaceId, {
-        type: 'shift-updated'
-    });
+        type: 'shift-updated',
+    })
 }
 
 export function emitWorkspaceCreated(userId: string) {
     broadCastToUser(userId, {
-        type: 'workspace-created'
+        type: 'workspace-created',
     })
 }
 

@@ -20,6 +20,7 @@ import shiftRequestsRouter from './routes/shiftRequests.js'
 import meetingsRouter from './routes/meetings.js'
 import timeOffRequestsRouter from './routes/timeOffRequests.js'
 import timesheetsRouter from './routes/timesheets.js'
+import eventsRouter from './routes/events.js'
 
 
 const app = express()
@@ -34,6 +35,7 @@ app.use('/users', usersRouter)
 app.use('/workspaces', workspacesRouter)
 app.use('/permissions', permissionsRouter)
 app.use('/invitations', invitationsRouter)
+app.use('/events', eventsRouter)
 
 // Mount nested workspace routes
 app.use('/workspaces/:workspaceId/shifts', shiftsRouter)
