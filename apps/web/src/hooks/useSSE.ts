@@ -24,12 +24,17 @@ export function useSSEStream(workspaceId: number | null, handlers: Handlers) {
             } catch (err) {
                 console.log('SSE Error', err);
             }
-
-            return () => {
-                source.removeEventListener('message', handleMessage)
-                source.close(); 
-            }
         }
 
+        source.addEventListener('message', handleMessage);
+
+        source.onerror = (err) => {
+            console.log('SSE Error', err);
+        }
+
+        return () => {
+            source.removeEventListener('message', handleMessage)
+            source.close(); 
+        }
     }, [workspaceId]); 
 }
