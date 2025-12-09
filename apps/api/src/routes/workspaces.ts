@@ -2,30 +2,9 @@ import express from 'express'
 import { getAuth } from '@clerk/express'
 import { prisma } from '../db.js'
 import { getWorkspaceMembership } from '../utils/authz.js'
-import { getWorkspaceChannel } from '../event.js'
+
 
 const router = express.Router()
-
-
-router.get('/stream', (req,res) => {
-    const workspaceId = Number(req.params.workspaceId);
-    const channel = getWorkspaceChannel(workspaceId);
-
-    res.setHeader('Content-Type', 'text/event-write');
-    res.setHeader('Cache-Control', 'no-cache'); 
-    res.setHeader('Connection', 'keep-alive');
-
-    const handler = (payload: any) => {
-        res.write(`data: ${JSON.stringify(payload)}\n\n`); 
-    }
-
-    channel.on('workspace-reload', handler);
-
-    req.on('close', ()=> {
-        channel.off('workspace-reload', handler);
-        res.end(); 
-    })
-})
 
 router.get('/', async (req, res) => {
     const { isAuthenticated, userId } = getAuth(req)
