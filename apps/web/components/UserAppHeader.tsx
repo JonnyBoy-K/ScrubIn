@@ -1,14 +1,11 @@
+'use client';
 import Link from "next/link";
 import {
-    Calendar,
-    LayoutDashboard,
-    Send,
     Bell,
-    Bolt,
-    CalendarFold,
+    CalendarDays,
 } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
-import { useParams } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 
 export default function UserAppHeader() {
     const { id } = useParams<{ id: string }>();
@@ -16,45 +13,45 @@ export default function UserAppHeader() {
     const href_requests = `/workspaces/${id}/user/requests`;
     const href_calendar = `/workspaces/${id}/user/calendar`;
 
+    const pathname = usePathname();
+
     return (
-        <div className="w-full bg-white p-4 shadow flex-row justify-between items-center flex border-b-gray-500 border-b">
-            {/* Left Header */}
-            <div className="flex flex-row gap-4 justify-center items-center">
-                <div className="p-2 rounded-2xl bg-[#3F37C9] border border-gray-200 shadow-md">
-                    <Calendar size={30} color="white" />
+
+        <nav className="flex items-center justify-between px-6 py-4 border-b border-border">
+
+            <div className="flex items-center gap-8">
+                <div className="flex items-center gap-2">
+                    <CalendarDays className="w-5 h-5 text-[#3F37C9]" />
+                    <span className="text-sm font-medium tracking-wide">Scrubin</span>
                 </div>
-                <div>
-                    <h1 className="text-xl font-bold text-black">Scrubin</h1>
+
+                <div className="flex items-center gap-6">
+                    <Link className={`text-sm ${pathname.startsWith(href_dashboard) ? 'text-foreground': 'text-muted-foreground'} hover:text-muted-foreground font-medium transition-colors`} 
+                    href={href_dashboard}>
+                        Dashboard
+                    </Link>
+
+                    <Link className={`text-sm ${pathname.startsWith(href_requests) ? 'text-foreground': 'text-muted-foreground'} hover:text-muted-foreground font-medium transition-colors`} 
+                    href={href_requests}>
+                        Requests
+                    </Link>
+
+                    <Link className={`text-sm ${pathname.startsWith(href_calendar) ? 'text-foreground': 'text-muted-foreground'} hover:text-muted-foreground font-medium transition-colors`} 
+                    href={href_calendar}>
+                        Calendar
+                    </Link>
+
+                    
 
                 </div>
             </div>
 
-            <div className="flex flex-row gap-4 ml-5">
-                <Link href={href_dashboard} className="flex flex-row gap-2 items-center bg-gray-100 p-2 rounded-lg cursor-pointer hover:bg-gray-200">
-                    <LayoutDashboard size={20} color="gray" />
-                    <span className="text-gray-500 text-md">Dashboard</span>
-                </Link>
-
-                <Link href={href_requests} className="flex flex-row gap-2 items-center bg-gray-100 p-2 rounded-lg cursor-pointer hover:bg-gray-200">
-                    <Send size={20} color="gray" />
-                    <span className="text-gray-500 text-md">Requests</span>
-                </Link>
-
-                <Link href={href_calendar} className="flex flex-row gap-2 items-center bg-gray-100 p-2 rounded-lg cursor-pointer hover:bg-gray-200">
-                    <CalendarFold size={20} color="gray" />
-                    <span className="text-gray-500 text-md">Calendar</span>
-                </Link>
+            <div className="flex items-center gap-4">
+                <Bell className="w-5 h-5 text-muted-foreground"/>
+                <UserButton/>
             </div>
-            <div className="flex flex-row gap-4 items-center">
-                <button>
-                    <Bell size={24} color="gray" />
-                </button>
-                <button>
-                    <Bolt size={24} color="gray" />
-                </button>
-                <UserButton />
-            </div>
-        </div >
+
+        </nav>
 
 
     );
