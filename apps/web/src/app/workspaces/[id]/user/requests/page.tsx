@@ -241,9 +241,9 @@ export default function Page() {
             <div className="w-full flex justify-end px-4">
                 <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
   <DialogTrigger asChild>
-    <Button className="flex items-center gap-2 text-white" onClick={() => setDialogOpen(true)}>
-      <Plus />
-      New Request
+    <Button className="flex items-center gap-2 !text-white" onClick={() => setDialogOpen(true)}>
+    <Plus />
+    New Request
     </Button>
   </DialogTrigger>
 
