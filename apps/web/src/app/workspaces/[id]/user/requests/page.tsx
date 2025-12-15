@@ -194,20 +194,35 @@ export default function Page() {
 
     useEffect(() => () => {isMounted.current = false},[]);
     useEffect(() => {
+
+
         if (!userId) return;  // Guard clause
         let alive = true;
         (async () => {
             try {
                 setLoading(true);
                 setError(null);
-
-                const [incomingRes, outgoingRes] = await Promise.all([
+                const now = new Date();
+                const futureDate = new Date();
+                futureDate.setDate(futureDate.getDate() + 30);
+                const [incomingRes, outgoingRes, userShiftRes, membersRes, workspaceShiftsRes] = await Promise.all([
                     apiClient.getIncomingShiftRequestsByUser(id, userId),
                     apiClient.getOutgoingShiftRequestsByUser(id, userId),
+                    apiClient.getUserShifts(Number(id), userId, { start: now.toISOString(), end: futureDate.toISOString()}),
+                    apiClient.getWorkspaceMembers(Number(id)),
+                    apiClient.getWorkspaceShifts(Number(id), {start: now.toISOString(), end: futureDate.toISOString()})
+
                 ]);
                 if (!alive) return;
+                const allShifts = Object.values(workspaceShiftsRes.buckets).flatMap(userBuckets =>
+                    Object.values(userBuckets).flat()
+                );
                 setIncoming((incomingRes?.requests ?? []) as AnyRequest[]);
                 setOutgoing((outgoingRes?.requests ?? []) as AnyRequest[]);
+                setUserShifts(userShiftRes.shifts);
+                setWorkspaceUsers(membersRes.members);
+                setAllWorkspaceShifts(allShifts);
+
             } catch (err) {
                 if (!alive) return;
                 setError(err instanceof Error ? err.message : "Failed to load requests");
@@ -220,6 +235,7 @@ export default function Page() {
             alive = false;
         };
     }, [id, apiClient, userId]);
+
 
     async function approve(idStr: string) {
         await apiClient.approveShiftRequest(id, idStr);
