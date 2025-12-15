@@ -295,6 +295,12 @@ export function createApiClient({ baseUrl, getToken }) {
 				method: 'POST',
 				path: `/workspaces/${workspaceId}/meetings/${meetingId}/respond`,
 				body: data
+			}),
+		updateTimesheet: (workspaceId, timesheetId, data) =>
+			request({
+				method: 'PATCH',
+				path: `/workspaces/${workspaceId}/timesheets/${timesheetId}`,
+				body: data
 			})
 	};
 }
