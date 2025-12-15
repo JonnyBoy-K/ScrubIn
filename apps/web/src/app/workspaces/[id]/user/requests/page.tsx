@@ -296,13 +296,7 @@ export default function Page() {
 
     useEffect(() => () => {isMounted.current = false},[]);
     useEffect(() => {
-<<<<<<< HEAD
         if (!userId) return;
-=======
-
-
-        if (!userId) return;  // Guard clause
->>>>>>> 50937655dfd368ca53a60ef9561134f212b5580c
         let alive = true;
         (async () => {
             try {
